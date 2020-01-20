@@ -24,6 +24,7 @@ Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, cons
 
 	Edge *edge = new Edge(from, to, weight);
 	from->Edges->push_back(edge);
+	to->IncomingEdges->push_back(edge);
 	return edge;
 }
 

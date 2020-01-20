@@ -46,6 +46,12 @@ struct DijkstraContext {
 	bool Processed = false;
 };
 
+struct BidirectionalDijkstraContext {
+	DijkstraContext* ForwardContext = nullptr;
+	DijkstraContext* BackwardContext = nullptr;
+	BidirectionalDijkstraContext(DijkstraContext* forward, DijkstraContext* backward): ForwardContext(forward), BackwardContext(backward) {};
+};
+
 typedef void (*Callback)(AlgoEvent, Vertex*, void* user_context);
 
 AlgoResult bfs(Vertex* source, Vertex* target, Callback callback, void* user_context = nullptr);
@@ -55,5 +61,7 @@ AlgoResult dfs(Vertex* source, Vertex* target, Callback callback, void* user_con
 AlgoResult dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr);
 
 AlgoResult bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr);
+
+AlgoResult bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr);
 
 #endif /* ALGO_H_ */

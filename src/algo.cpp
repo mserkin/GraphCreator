@@ -173,3 +173,59 @@ AlgoResult bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback c
 
 	return (static_cast<DijkstraContext*>(target->Context)->Weight < INFINITY_WEIGHT) ? Found : NotFound;
 }
+
+AlgoResult bidirectional_dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context) {
+	AlgoResult result = NotFound;
+	boost::heap::binomial_heap<PVertex, boost::heap::compare<VertexComparator>> forward_queue;
+	boost::heap::binomial_heap<PVertex, boost::heap::compare<VertexComparator>> backward_queue;
+	BidirectionalDijkstraContext *context;
+	for (const auto& v : graph) {
+		context = new BidirectionalDijkstraContext(new DijkstraContext(), new DijkstraContext());
+		if (v == source) {
+			context->ForwardContext->Weight = 0;
+		}
+		if (v == target) {
+			context->BackwardContext->context->Weight = 0;
+		}
+		static_cast<BidirectionalDijkstraContext*>(v->Context)->ForwardContex->Handle = forward_queue.push(v);
+		static_cast<BidirectionalDijkstraContext*>(v->Context)->BackwardContex->Handle = backward_queue.push(v);
+	}
+
+	Vertex* forward_v, backward_v;
+	while (!forward_queue.empty() || !backward_queue.empty()) {
+		if (!forward_queue.empty()) {
+			forward_v = queue.top();
+			forward_context = static_cast<BidirectionalDijkstraContext*>(v->Context);
+	=======
+			if (callback) callback(VertexProcessingStarted, v, user_context);
+		
+			for (const auto &fe : *(forward_v->Edges)) {
+				if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Processed) continue;
+				if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
+
+				if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight > context->Weight + e->Weight) {
+					static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight = context->Weight + e->Weight;
+					static_cast<DijkstraContext*>(e->ToVertex->Context)->Parent = v;
+
+					queue.increase(static_cast<VertexHandle>(static_cast<DijkstraContext*>(e->ToVertex->Context)->Handle), e->ToVertex);
+
+					//cout << "After increase:" << std::endl;
+					//for (auto it = queue.ordered_begin(); it != queue.ordered_end(); ++it) {
+					//	std::cout << (*it)->Name << ":" << static_cast<DijkstraContext*>((*it)->Context)->Weight << std::endl;
+					//}
+				}
+			}
+			static_cast<DijkstraContext*>(v->Context)->Processed = true;
+			if (callback) callback(VertexProcessingFinished, v, user_context);
+
+			if (v == target) {
+				if (callback) callback(TargetFound, v, user_context);
+				result = Found;
+				break;
+			}
+			queue.pop();
+		};
+
+		if (callback) callback(AlgorithmFinished, nullptr, user_context);
+	return result;
+}
