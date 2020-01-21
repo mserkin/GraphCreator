@@ -21,7 +21,7 @@ typedef vector<Edge*> EdgeList;
 struct Vertex {
 	string Name;
 	EdgeList *Edges;
-	IncomingEdgeList *Edges;
+	EdgeList *IncomingEdges = nullptr;
 	void* Context = nullptr;
 	Vertex(string _Name, EdgeList *_Edges): Name(_Name), Edges(_Edges) {};
 };

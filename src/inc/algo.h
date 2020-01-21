@@ -37,10 +37,10 @@ struct VertexComparator {
 };
 
 typedef boost::heap::detail::node_handle<boost::heap::detail::parent_pointing_heap_node<PVertex>*, boost::heap::detail::make_binomial_heap_base<PVertex, boost::parameter::aux::flat_like_arg_list<boost::parameter::aux::flat_like_arg_tuple<boost::heap::tag::compare, boost::heap::compare<VertexComparator>, std::integral_constant<bool, true> > > >::type, PVertex&> VertexHandle;
-
+typedef double weight_t;
 
 struct DijkstraContext {
-	double Weight = INFINITY_WEIGHT;
+	weight_t Weight = INFINITY_WEIGHT;
 	Vertex* Parent = nullptr;
 	VertexHandle Handle;
 	bool Processed = false;
@@ -53,6 +53,7 @@ struct BidirectionalDijkstraContext {
 };
 
 typedef void (*Callback)(AlgoEvent, Vertex*, void* user_context);
+typedef void (*BidiCallback)(AlgoEvent, Vertex*, Vertex*, void* user_context);
 
 AlgoResult bfs(Vertex* source, Vertex* target, Callback callback, void* user_context = nullptr);
 
