@@ -196,7 +196,6 @@ AlgoResult bidirectional_dijkstra(Vertex* source, Vertex* target, Graph& graph, 
 		if (!forward_queue.empty()) {
 			forward_v = queue.top();
 			forward_context = static_cast<BidirectionalDijkstraContext*>(v->Context);
-	=======
 			if (callback) callback(VertexProcessingStarted, v, user_context);
 		
 			for (const auto &fe : *(forward_v->Edges)) {
