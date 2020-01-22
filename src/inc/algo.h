@@ -21,14 +21,32 @@ enum AlgoEvent {
 	AlgorithmFinished
 };
 
-enum AlgoResult {
+enum AlgoResultCode {
 	Ok,
 	Found,
 	NotFound,
 	NoSourceOrTarget
 };
 
-const double INFINITY_WEIGHT = 100000000000;
+struct AlgoResult {
+	AlgoResultCode ResultCode = TargetNotFound;
+}
+
+struct BidirectionalDijkstraResult : AlgoResult{
+	Vertex* ForwardSearchLastVertex = nullptr;
+	Vertex* BackwardSearchLastVertex = nullptr;
+	Edge* ConnectingEdge = nullptr;
+	BidirectionalDijkstraResult(AlgoResultCode code, Vertex* forward_search_vertex, Vertex* backward_search_vertex, Edge* edge) {
+		ResultCode = code;
+		ForwardSearchLastVertex = forward_search_vertex;
+		ForwardSearchLastVertex = backward_search_vertex;
+		ConnectingEdge = edge;
+	}
+}
+
+
+
+const double INFINITY_WEIGHT = 10000000000;
 
 struct DijkstraContext;
 
