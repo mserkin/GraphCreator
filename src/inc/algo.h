@@ -29,7 +29,7 @@ enum AlgoResultCode {
 };
 
 struct AlgoResult {
-	AlgoResultCode ResultCode = TargetNotFound;
+	AlgoResultCode ResultCode = NotFound;
 }
 
 struct BidirectionalDijkstraResult : AlgoResult{
@@ -44,10 +44,6 @@ struct BidirectionalDijkstraResult : AlgoResult{
 	}
 }
 
-
-
-const double INFINITY_WEIGHT = 10000000000;
-
 struct DijkstraContext;
 
 struct VertexComparator {
@@ -56,6 +52,8 @@ struct VertexComparator {
 
 typedef boost::heap::detail::node_handle<boost::heap::detail::parent_pointing_heap_node<PVertex>*, boost::heap::detail::make_binomial_heap_base<PVertex, boost::parameter::aux::flat_like_arg_list<boost::parameter::aux::flat_like_arg_tuple<boost::heap::tag::compare, boost::heap::compare<VertexComparator>, std::integral_constant<bool, true> > > >::type, PVertex&> VertexHandle;
 typedef double weight_t;
+
+const double INFINITY_WEIGHT = 10000000000;
 
 struct DijkstraContext {
 	weight_t Weight = INFINITY_WEIGHT;
@@ -73,14 +71,15 @@ struct BidirectionalDijkstraContext {
 typedef void (*Callback)(AlgoEvent, Vertex*, void* user_context);
 typedef void (*BidiCallback)(AlgoEvent, Vertex*, Vertex*, void* user_context);
 
-AlgoResult bfs(Vertex* source, Vertex* target, Callback callback, void* user_context = nullptr);
 
-AlgoResult dfs(Vertex* source, Vertex* target, Callback callback, void* user_context = nullptr);
+void bfs(Vertex* source, Vertex* target, Callback callback, void* user_context = nullptr, AlgoResult& result);
 
-AlgoResult dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr);
+void dfs(Vertex* source, Vertex* target, Callback callback, void* user_context = nullptr, AlgoResult& result);
 
-AlgoResult bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr);
+void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr, AlgoResult& result);
 
-AlgoResult bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr);
+void bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr, AlgoResult& result);
+
+void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr, BidirectionalDijkstraResult& result);
 
 #endif /* ALGO_H_ */

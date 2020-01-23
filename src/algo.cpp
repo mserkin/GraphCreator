@@ -14,7 +14,7 @@
 #include "graph.h"
 #include "algo.h"
 
-AlgoResult bfs(Vertex *source, Vertex *target, Callback callback, void* user_context) {
+void bfs(Vertex *source, Vertex *target, Callback callback, void* user_context, AlgoResult& result) {
 	if (!source || !target) {
 		return NoSourceOrTarget;
 	};
@@ -36,7 +36,8 @@ AlgoResult bfs(Vertex *source, Vertex *target, Callback callback, void* user_con
 			if (e->ToVertex == target) {
 				if (callback) callback(TargetFound, e->ToVertex, user_context);
 				if (callback) callback(AlgorithmFinished, nullptr, user_context);
-				return Found;
+				result.ResultCode = Found;
+				return;
 			}
 		}
 		if (callback) callback(VertexProcessingFinished, v, user_context);
@@ -44,10 +45,10 @@ AlgoResult bfs(Vertex *source, Vertex *target, Callback callback, void* user_con
 	if (callback) callback(TargetNotFound, nullptr, user_context);
 	if (callback) callback(AlgorithmFinished, nullptr, user_context);
 
-    return NotFound;
+    result.ResultCode = NotFound;
 }
 
-AlgoResult dfs(Vertex *source, Vertex *target, Callback callback, void* user_context) {
+AlgoResult dfs(Vertex *source, Vertex *target, Callback callback, void* user_context, AlgoResult& result) {
 	if (!source || !target) {
 		return NoSourceOrTarget;
 	};
@@ -69,14 +70,15 @@ AlgoResult dfs(Vertex *source, Vertex *target, Callback callback, void* user_con
 			if (e->ToVertex == target) {
 				if (callback) callback(TargetFound, e->ToVertex, user_context);
 				if (callback) callback(AlgorithmFinished, nullptr, user_context);
-				return Found;
+				result.ResultCode = Found;
+				return;
 			}
 		}
 		if (callback) callback(VertexProcessingFinished, v, user_context);
 	}
 	if (callback) callback(TargetNotFound, nullptr, user_context);
 	if (callback) callback(AlgorithmFinished, nullptr, user_context);
-    return NotFound;
+    result.ResultCode = NotFound;
 }
 
 bool VertexComparator::operator()(const PVertex& v1, const PVertex& v2) const {
@@ -91,8 +93,7 @@ bool VertexComparator::operator()(const PVertex& v1, const PVertex& v2) const {
 	//return static_cast<DijkstraContext*>(v1->Context)->Weight > static_cast<DijkstraContext*>(v2->Context)->Weight;
 }
 
-AlgoResult dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context) {
-	AlgoResult result = NotFound;
+AlgoResult dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context, AlgoResult& result) {
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<VertexComparator>> queue;
 	DijkstraContext *context;
 	for (const auto& v : graph) {
@@ -130,17 +131,18 @@ AlgoResult dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callb
 
 		if (v == target) {
 			if (callback) callback(TargetFound, v, user_context);
-			result = Found;
+			result.ResultCode = Found;
+			if (callback) callback(AlgorithmFinished, nullptr, user_context);
 			break;
 		}
 		queue.pop();
 	};
 
 	if (callback) callback(AlgorithmFinished, nullptr, user_context);
-	return result;
+	result.ResultCode = NotFound;
 }
 
-AlgoResult bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context) {
+AlgoResult bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context, AlgoResult& result) {
 	DijkstraContext *context;
 	for (const auto& v : graph) {
 		context = new DijkstraContext();
@@ -162,7 +164,9 @@ AlgoResult bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback c
 					static_cast<DijkstraContext*>(e->ToVertex->Context)->Parent = v;
 					if (i == graph.size()) {
 						if (callback) callback(NegativeLoopDetected, v, user_context);
-						return NotFound;
+						if (callback) callback(AlgorithmFinished, nullptr, user_context);	
+						result.ResultCode = NotFound;
+						return;
 					}
 				}
 			}
@@ -171,15 +175,14 @@ AlgoResult bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback c
 	}
 
 	if (callback) callback(AlgorithmFinished, nullptr, user_context);
-
-	return (static_cast<DijkstraContext*>(target->Context)->Weight < INFINITY_WEIGHT) ? Found : NotFound;
+	result.ResultCode = (static_cast<DijkstraContext*>(target->Context)->Weight < INFINITY_WEIGHT) ? Found : NotFound;
 }
 
-AlgoResult bidirectional_dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context) {
-	AlgoResult result = NotFound;
+AlgoResult bidirectional_dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context, BidirectionalDijkstraResult& result) {
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<VertexComparator>> forward_queue;
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<VertexComparator>> backward_queue;
 	BidirectionalDijkstraContext *context;
+	result.ResultCode = NotFound;
 	for (const auto& v : graph) {
 		context = new BidirectionalDijkstraContext(new DijkstraContext(), new DijkstraContext());
 		if (v == source) {
@@ -200,7 +203,7 @@ AlgoResult bidirectional_dijkstra(Vertex* source, Vertex* target, Graph& graph, 
 		backward_vertex = backward_queue.top();
 		
 		if (shortest_ever_path < static_cast<BibirecrionalDijkstraContext*>(forward_queue.top()->Context)->ForwardContex->Weight + 
-					static_cast<BibirecrionalDijkstraContext*>(backward_queue.top()->Context)->BackwardContex->Weight) 
+				static_cast<BibirecrionalDijkstraContext*>(backward_queue.top()->Context)->BackwardContex->Weight) 
 		{
 			if (bidiCallback) bidiCallback(TargetFound, forward_shortest_path_vertex, backward_shortest_path_vertex, user_context);
 			if (callback) callback(AlgorithmFinished, nullptr, user_context);
@@ -236,7 +239,7 @@ AlgoResult bidirectional_dijkstra(Vertex* source, Vertex* target, Graph& graph, 
 
 			if (forward_vertex == target) {
 				if (callback) callback(TargetFound, forward_vertex, user_context);
-				result = Found;
+				result.ResultCode = Found;
 				break;
 			}
 			forward_queue.pop();
@@ -272,12 +275,12 @@ AlgoResult bidirectional_dijkstra(Vertex* source, Vertex* target, Graph& graph, 
 
 			if (backward_vertex == source) {
 				if (callback) callback(TargetFound, backward_vertex, user_context);
-				result = Found;
+				result.ResultCode = Found;
 				break;
 			}
 			backward_queue.pop();
 		};
 		
 		if (callback) callback(AlgorithmFinished, nullptr, user_context);
-	return result;
+	return;
 }
