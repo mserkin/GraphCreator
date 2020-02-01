@@ -30,7 +30,7 @@ enum AlgoResultCode {
 
 struct AlgoResult {
 	AlgoResultCode ResultCode = NotFound;
-}
+};
 
 struct BidirectionalDijkstraResult : AlgoResult{
 	Vertex* ForwardSearchLastVertex = nullptr;
@@ -42,7 +42,7 @@ struct BidirectionalDijkstraResult : AlgoResult{
 		ForwardSearchLastVertex = backward_search_vertex;
 		ConnectingEdge = edge;
 	}
-}
+};
 
 struct DijkstraContext;
 
@@ -72,14 +72,14 @@ typedef void (*Callback)(AlgoEvent, Vertex*, void* user_context);
 typedef void (*BidiCallback)(AlgoEvent, Vertex*, Vertex*, void* user_context);
 
 
-void bfs(Vertex* source, Vertex* target, Callback callback, void* user_context = nullptr, AlgoResult& result);
+void bfs(Vertex* source, Vertex* target, Callback callback, AlgoResult& result, void* user_context = nullptr);
 
-void dfs(Vertex* source, Vertex* target, Callback callback, void* user_context = nullptr, AlgoResult& result);
+void dfs(Vertex* source, Vertex* target, Callback callback, AlgoResult& result, void* user_context = nullptr);
 
-void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr, AlgoResult& result);
+void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback,  AlgoResult& result, void* user_context = nullptr);
 
-void bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr, AlgoResult& result);
+void bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callback,  AlgoResult& result, void* user_context = nullptr);
 
-void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, void* user_context = nullptr, BidirectionalDijkstraResult& result);
+void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, BidirectionalDijkstraResult& result, void* user_context = nullptr);
 
 #endif /* ALGO_H_ */

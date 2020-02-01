@@ -24,7 +24,7 @@
 
 using namespace std;
 
-const string VERSION = "1.6.0.8";
+const string VERSION = "1.6.0.9";
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;
@@ -273,29 +273,29 @@ void applyAlgo(Graph& graph, Settings &settings) {
 	switch (settings.Algorithm) {
 	case BreadthFirstSearch: {
 		cout << "Applying breadth-first search..." << endl;
-		result = bfs(source, target, handleAlgorithmEvent, &user_context);
+		bfs(source, target, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
 	case DepthFirstSearch: {
 		cout << "Applying depth-first search..." << endl;
-		result = dfs(source, target, handleAlgorithmEvent, &user_context);
+		dfs(source, target, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
 	case Dijkstra: {
 		cout << "Applying Dijkstra minimal weight path search..." << endl;
-		result = dijkstra(source, target, graph, handleAlgorithmEvent, &user_context);
+		dijkstra(source, target, graph, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
 	case BellmanFord: {
 		cout << "Applying Bellman-Ford minimal weight path search..." << endl;
-		result = bellman_ford(source, target, graph, handleAlgorithmEvent, &user_context);
+		bellman_ford(source, target, graph, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
 
 	default: return;
 	}
 
-	switch (result) {
+	switch (result.ResultCode) {
 	case NoSourceOrTarget:
 		cerr << "\tSource or target vertices are not defined." << endl;
 		break;
