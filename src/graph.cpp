@@ -13,7 +13,7 @@ Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, cons
 	if (indexOfVertex(from, graph) < 0 || indexOfVertex(to, graph) < 0) return nullptr;
 	if (from == to && !settings.SelfLoop)  return nullptr;
 	if (!settings.BiDirectional) {
-		for (auto it = to->Edges->begin(); it != to->Edges->end(); it++) {
+		for (auto it = to->OutcomingEdges->begin(); it != to->OutcomingEdges->end(); it++) {
 			if ((*it)->ToVertex == from) return nullptr;
 		}
 	}
@@ -23,7 +23,7 @@ Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, cons
 	}
 
 	Edge *edge = new Edge(from, to, weight);
-	from->Edges->push_back(edge);
+	from->OutcomingEdges->push_back(edge);
 	to->IncomingEdges->push_back(edge);
 	return edge;
 }
@@ -32,7 +32,7 @@ bool addVertex (Vertex *vertex, Graph &graph, const Settings& settings) {
 	if (findVertex(vertex->Name, graph)) {
 		return false;
 	}
-	for (auto ite = vertex->Edges->begin(); ite != vertex->Edges->end(); ite++) {
+	for (auto ite = vertex->OutcomingEdges->begin(); ite != vertex->OutcomingEdges->end(); ite++) {
 		if (indexOfVertex((*ite)->ToVertex, graph) < 0) return false;
 		if ((*ite)->ToVertex == (*ite)->FromVertex && !settings.SelfLoop) return false;
 		if ((*ite)->Weight > settings.MaxEdgeWeight || (*ite)->Weight < settings.MinEdgeWeight) return false;
@@ -42,8 +42,9 @@ bool addVertex (Vertex *vertex, Graph &graph, const Settings& settings) {
 }
 
 Vertex* addVertex (const string &name, Graph &graph, const Settings& settings) {
-	Vertex *vertex = new Vertex (name, new EdgeList());
-	if (addVertex(vertex, graph, settings)) {
+	Vertex *vertex = new Vertex (name, new EdgeList(), new EdgeList());
+	bool success = addVertex(vertex, graph, settings);
+	if (success) {
 		return vertex;
 	}
 	else {

@@ -24,7 +24,7 @@
 
 using namespace std;
 
-const string VERSION = "1.6.0.9";
+const string VERSION = "1.6.0.10";
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;
@@ -44,20 +44,30 @@ int chooseToVertex(Vertex *vertex_from, const Settings &settings, Graph &graph,
 		return -1;
 	}
 	if (!settings.BiDirectional) {
-		for (auto itb = vertex_to->Edges->begin(); itb != vertex_to->Edges->end(); itb++) {
+		for (auto itb = vertex_to->OutcomingEdges->begin(); itb != vertex_to->OutcomingEdges->end(); itb++) {
 			if ((*itb)->ToVertex == vertex_from) {
 				error_count++;
-				return -1;
+				return -2;
 			}
 		}
 	}
-	for (auto ite = vertex_from->Edges->begin(); ite != vertex_from->Edges->end(); ite++) {
+	for (auto ite = vertex_from->OutcomingEdges->begin(); ite != vertex_from->OutcomingEdges->end(); ite++) {
 		if ((*ite)->ToVertex == vertex_to) {
 			error_count++;
-			return -1;
+			return -3;
 		}
 	}
 	return vertex_ind;
+}
+
+void printGraph(Graph& graph) {
+	for (auto itv = graph.begin(); itv != graph.end(); itv++) {
+		cout << (*itv)->Name << "->";
+		for (auto ite = (*itv)->OutcomingEdges->begin(); ite != (*itv)->OutcomingEdges->end(); ite++) {
+			cout << (*ite)->ToVertex->Name << "; ";
+		}
+		cout << endl;
+	}
 }
 
 void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
@@ -72,7 +82,7 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 	case VertexProcessingStarted:
 		processed++;
 		if (verbose) cout << "\tprocessing started: " << vertex->Name << endl;
-		if (vertex == alg_context->SourceVertex) {
+		if (alg_context->SettingsPtr->Algorithm == BellmanFord && vertex == alg_context->SourceVertex) {
 			cout << "Iteration " << ++source_processing_times << " of " << alg_context->GraphPtr->size() + 1 << endl;
 		}
 		break;
@@ -80,10 +90,10 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 		if (verbose) cout << "\tprocessing finished: " << vertex->Name << endl;
 		break;
 	case TargetFound:
-		if (alg_context->SettingsPtr->Algorithm != BellmanFord) cout << "target found: " << vertex->Name << endl;
+		cout << "target found: " << vertex->Name << endl;
 		break;
 	case TargetNotFound:
-		if (alg_context->SettingsPtr->Algorithm != BellmanFord) cout << "target not found. " << endl;
+		cout << "target not found. " << endl;
 		break;
 	case AlgorithmFinished:
 		if (alg_context->SettingsPtr->Algorithm != BellmanFord) cout << "Vertices checked: " << checked << ", processed: " << processed << endl;
@@ -106,18 +116,38 @@ void createGraph(Graph& graph, const Settings& settings) {
 			exit (-10);
 		}
 	}
+
+	//printGraph(graph);
+
 	while (total_edge_num > 0 && error_count < 1000) {
 		for (auto it = graph.begin(); it != graph.end(); it++) {
 			int ver_edges = rand() % (settings.MaxEdgeCount / settings.VertexCount) + 1;
+			Vertex* pvert = *it;
+			cout << endl << "\tvertex: " << pvert->Name << "\n\tto create edges:" << ver_edges << endl;
 			while (ver_edges > 0 && total_edge_num > 0 && error_count < 1000) {
 				int vertex_ind = chooseToVertex(*it, settings, graph, error_count);
 				if (vertex_ind < 0) {
-					cout << "Error creating edge for vertex " << static_cast<Vertex*>(*it)->Name << endl;
-					ver_edges--;
+					cout << "Error creating edge for vertex " << static_cast<Vertex*>(*it)->Name << ":";
+					switch(vertex_ind) {
+					case -1:
+						cout << " self-loops are not allowed by settings" << endl;
+						break;
+					case -2:
+						cout << " bidirectional edges are not allowed by settings" << endl;
+						break;
+					case -3:
+						cout << " such edge already exists" << endl;
+						break;
+					}
+					error_count++;
 					continue;
 				}
 				double weight = rand() % (settings.MaxEdgeWeight - settings.MinEdgeWeight + 1) - settings.MinEdgeWeight;
-				addEdge(*it, graph[vertex_ind], weight, graph, settings);
+				Edge* edge = addEdge(*it, graph[vertex_ind], weight, graph, settings);
+				if (!edge) {
+					error_count++;
+					continue;
+				}
 				ver_edges--;
 				total_edge_num--;
 			}
@@ -162,7 +192,7 @@ void loadGraph(Graph& graph, const Settings& settings) {
 	buffer[lSize] = 0;
 
 	//содержимое файла теперь находится в буфере
-	puts(buffer);
+	if (settings.Verbose) puts(buffer);
 
 	// завершение работы
 	fclose (fd);
@@ -213,7 +243,7 @@ void loadGraph(Graph& graph, const Settings& settings) {
 			    }
 				double weight = edge_obj["weight"].GetDouble();
 				if (!addEdge(from_vertex, to_vertex, weight, graph, settings)) {
-					cerr << "Cannot add edge: " << *str_from << "->" << *str_to;
+					cerr << "Cannot add edge: " << *str_from << "->" << *str_to << endl;
 					exit(-8);
 				}
 			}
@@ -229,7 +259,7 @@ void saveGraph(Graph& graph, const Settings& settings) {
 		rapidjson::Value vert(rapidjson::kObjectType);
 		rapidjson::Value name(rapidjson::kStringType);
 		rapidjson::Value edges(rapidjson::kArrayType);
-		for (auto ite = (*itv)->Edges->begin(); ite != (*itv)->Edges->end(); ite++)
+		for (auto ite = (*itv)->OutcomingEdges->begin(); ite != (*itv)->OutcomingEdges->end(); ite++)
 		{
 			rapidjson::Value edge(rapidjson::kObjectType);
 			rapidjson::Value to_vertex(rapidjson::kStringType);
@@ -253,22 +283,13 @@ void saveGraph(Graph& graph, const Settings& settings) {
 	fclose(fd);
 }
 
-void printGraph(Graph& graph) {
-	for (auto itv = graph.begin(); itv != graph.end(); itv++) {
-		cout << (*itv)->Name << "->";
-		for (auto ite = (*itv)->Edges->begin(); ite != (*itv)->Edges->end(); ite++) {
-			cout << (*ite)->ToVertex->Name << "; ";
-		}
-		cout << endl;
-	}
-}
-
 void applyAlgo(Graph& graph, Settings &settings) {
 	if (settings.Algorithm == None) return;
 	Vertex *source = findVertex(settings.SourceVertex, graph);
 	Vertex *target = findVertex(settings.TargetVertex, graph);
 	UserContex user_context(&settings, &graph, source, target);
 	AlgoResult result;
+	BidirectionalDijkstraResult fast_dijkstra_result;
 
 	switch (settings.Algorithm) {
 	case BreadthFirstSearch: {
@@ -288,9 +309,14 @@ void applyAlgo(Graph& graph, Settings &settings) {
 	}
 	case BellmanFord: {
 		cout << "Applying Bellman-Ford minimal weight path search..." << endl;
-		bellman_ford(source, target, graph, handleAlgorithmEvent, result, &user_context);
+		bellmanFord(source, target, graph, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
+	case FastDijkstra:
+		cout << "Applying Bidirectional Dijkstra minimal weight path search..." << endl;
+		bidirectionalDijkstra(source, target, graph, handleAlgorithmEvent, fast_dijkstra_result, &user_context);
+		result = fast_dijkstra_result;
+		break;
 
 	default: return;
 	}
@@ -304,26 +330,62 @@ void applyAlgo(Graph& graph, Settings &settings) {
 		break;
 	case Found: {
 		cout << "The path from source to target has been found: " << endl;
+
 		Vertex *v = target;
+		if (settings.Algorithm == FastDijkstra) v = fast_dijkstra_result.ForwardSearchLastVertex;
 		stack<Vertex*> path;
 		path.push(v);
 		while (v != source) {
-			if (settings.Algorithm == Dijkstra || settings.Algorithm == BellmanFord) {
+			switch(settings.Algorithm) {
+			case Dijkstra:
+			case BellmanFord:
 				v = static_cast<DijkstraContext*>(v->Context)->Parent;
-			}
-			else {
+				break;
+			case BreadthFirstSearch:
+			case DepthFirstSearch:
 				v = static_cast<Vertex*>(v->Context);
+				break;
+			case FastDijkstra:
+				v = static_cast<BidirectionalDijkstraContext*>(v->Context)->ParentInForwardSearch;
+				break;
+			default:
+				break;
 			}
 			path.push(v);
 		}
+
 		cout << "\t";
 		while (!path.empty()) {
 			cout << path.top()->Name << ";";
 			path.pop();
 		}
-		cout << endl;
-		if (settings.Algorithm == Dijkstra || settings.Algorithm == BellmanFord) {
-			cout << "\tShortest path weight: " << static_cast<DijkstraContext*>(target->Context)->Weight;
+
+		if (settings.Algorithm == FastDijkstra) {
+			v = fast_dijkstra_result.BackwardSearchLastVertex;
+			cout << v->Name << ";";
+			while (v != target) {
+				v = static_cast<BidirectionalDijkstraContext*>(v->Context)->ParentInBackwardSearch;
+				cout << v->Name << ";";
+			}
+		}
+
+		cout << "\n\tShortest path weight: ";
+		switch(settings.Algorithm) {
+		case Dijkstra:
+		case BellmanFord:
+			cout << static_cast<DijkstraContext*>(target->Context)->Weight;
+			break;
+		case BreadthFirstSearch:
+		case DepthFirstSearch:
+			cout << "unknown (used algorithm is not capable to detect path of lowest weight)\n";
+			break;
+		case FastDijkstra:
+			cout << static_cast<BidirectionalDijkstraContext*>(fast_dijkstra_result.ForwardSearchLastVertex->Context)->WeightInForwardSearch +
+				static_cast<BidirectionalDijkstraContext*>(fast_dijkstra_result.BackwardSearchLastVertex->Context)->WeightInBackwardSearch +
+				fast_dijkstra_result.ConnectingEdgeWeight << "\n";
+			break;
+		default:
+			break;
 		}
 		break;
 	}
@@ -332,7 +394,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 }
 
 int main(int argc, char **argv) {
-	srand(time(0));
+	srand(997);   //time(0));
 
 	Settings settings;
 

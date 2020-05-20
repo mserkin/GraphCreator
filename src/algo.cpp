@@ -28,7 +28,7 @@ void bfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
 		Vertex *v = q.front();
 		q.pop();
 		if (callback) callback(VertexProcessingStarted, v, user_context);
-		for (const auto &e : *(v->Edges)) {
+		for (const auto &e : *(v->OutcomingEdges)) {
 			if (!e->ToVertex->Context) {
 				e->ToVertex->Context = (void*)v;
 				q.push(e->ToVertex);
@@ -63,7 +63,7 @@ void dfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
 		Vertex *v = q.top();
 		q.pop();
 		if (callback) callback(VertexProcessingStarted, v, user_context);
-		for (const auto &e : *(v->Edges)) {
+		for (const auto &e : *(v->OutcomingEdges)) {
 			if (!e->ToVertex->Context) {
 				e->ToVertex->Context = (void*)v;
 				q.push(e->ToVertex);
@@ -83,7 +83,7 @@ void dfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
     result.ResultCode = NotFound;
 }
 
-bool VertexComparator::operator()(const PVertex& v1, const PVertex& v2) const {
+bool DijkstraVertexComparator::operator()(const PVertex& v1, const PVertex& v2) const {
 	DijkstraContext *c1, *c2;
 	c1 = static_cast<DijkstraContext*>(v1->Context);
 	c2 = static_cast<DijkstraContext*>(v2->Context);
@@ -91,12 +91,11 @@ bool VertexComparator::operator()(const PVertex& v1, const PVertex& v2) const {
 		return true;
 	else
 		return false;
-	// return "true" if "p1" is ordered before "p2", for example:
-	//return static_cast<DijkstraContext*>(v1->Context)->Weight > static_cast<DijkstraContext*>(v2->Context)->Weight;
+	// return "true" if "p1" is ordered before "p2"
 }
 
 void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
-	boost::heap::binomial_heap<PVertex, boost::heap::compare<VertexComparator>> queue;
+	boost::heap::binomial_heap<PVertex, boost::heap::compare<DijkstraVertexComparator>> queue;
 	DijkstraContext *context;
 	for (const auto& v : graph) {
 		context = new DijkstraContext();
@@ -112,7 +111,7 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 		v = queue.top();
 		context = static_cast<DijkstraContext*>(v->Context);
 		if (callback) callback(VertexProcessingStarted, v, user_context);
-		for (const auto &e : *(v->Edges)) {
+		for (const auto &e : *(v->OutcomingEdges)) {
 			if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Processed) continue;
 			if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
 
@@ -135,7 +134,7 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 			if (callback) callback(TargetFound, v, user_context);
 			result.ResultCode = Found;
 			if (callback) callback(AlgorithmFinished, nullptr, user_context);
-			break;
+			return;
 		}
 		queue.pop();
 	};
@@ -144,7 +143,7 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 	result.ResultCode = NotFound;
 }
 
-void bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
+void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
 	DijkstraContext *context;
 	for (const auto& v : graph) {
 		context = new DijkstraContext();
@@ -158,7 +157,7 @@ void bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callbac
 		for (const auto& v : graph) {
 			if (callback) callback(VertexProcessingStarted, v, user_context);
 			context = static_cast<DijkstraContext*>(v->Context);
-			for (const auto &e : *(v->Edges)) {
+			for (const auto &e : *(v->OutcomingEdges)) {
 				if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
 
 				if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight > context->Weight + e->Weight) {
@@ -180,108 +179,144 @@ void bellman_ford(Vertex* source, Vertex* target, Graph& graph, Callback callbac
 	result.ResultCode = (static_cast<DijkstraContext*>(target->Context)->Weight < INFINITY_WEIGHT) ? Found : NotFound;
 }
 
-void bidirectional_dijkstra(Vertex* source, Vertex* target, Graph& graph, BidiCallback callback, BidirectionalDijkstraResult& result, void* user_context) {
-	boost::heap::binomial_heap<PVertex, boost::heap::compare<VertexComparator>> forward_queue;
-	boost::heap::binomial_heap<PVertex, boost::heap::compare<VertexComparator>> backward_queue;
-	BidirectionalDijkstraContext *context;
+bool FastDijkstraForwardComparator::operator()(const PVertex& v1, const PVertex& v2) const {
+	return (static_cast<BidirectionalDijkstraContext*>(v1->Context)->WeightInForwardSearch >
+		static_cast<BidirectionalDijkstraContext*>(v2->Context)->WeightInForwardSearch );
+	// return "true" if "p1" is ordered before "p2"
+}
+
+bool FastDijkstraBackwardComparator::operator()(const PVertex& v1, const PVertex& v2) const {
+	return (static_cast<BidirectionalDijkstraContext*>(v1->Context)->WeightInBackwardSearch >
+		static_cast<BidirectionalDijkstraContext*>(v2->Context)->WeightInBackwardSearch );
+	// return "true" if "p1" is ordered before "p2"
+}
+
+void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, BidirectionalDijkstraResult& result, void* user_context) {
+	boost::heap::binomial_heap<PVertex, boost::heap::compare<FastDijkstraForwardComparator>> forward_queue;
+	boost::heap::binomial_heap<PVertex, boost::heap::compare<FastDijkstraBackwardComparator>> backward_queue;
+	BidirectionalDijkstraContext *current_vertex_context;
 	result.ResultCode = NotFound;
+	//initialize all vertices' contexts
 	for (const auto& v : graph) {
-		context = new BidirectionalDijkstraContext(new DijkstraContext(), new DijkstraContext());
+		current_vertex_context = new BidirectionalDijkstraContext();
+		v->Context = current_vertex_context;
 		if (v == source) {
-			context->ForwardContext->Weight = 0;
+			current_vertex_context->WeightInForwardSearch = 0;
 		}
 		if (v == target) {
-			context->BackwardContext->Weight = 0;
+			current_vertex_context->WeightInBackwardSearch = 0;
 		}
-		static_cast<BidirectionalDijkstraContext*>(v->Context)->ForwardContext->Handle = forward_queue.push(v);
-		static_cast<BidirectionalDijkstraContext*>(v->Context)->BackwardContext->Handle = backward_queue.push(v);
+		current_vertex_context->HandleInForwardSearch = forward_queue.push(v);
+		current_vertex_context->HandleInBackwardSearch = backward_queue.push(v);
 	}
 	
-	weight_t shortest_ever_path = INFINITY_WEIGHT, new_short_path;
-	Vertex *forward_vertex, *backward_vertex, *forward_shortest_path_vertex = nullptr, *backward_shortest_path_vertex = nullptr;
-	DijkstraContext *neighbour_forward_context, *neighbour_backward_context;
+	weight_t shortest_path_weight = INFINITY_WEIGHT, new_path_weight;
+	Vertex *current_forward_search_vertex, *current_backward_search_vertex, *neighbor;
+	Vertex *forward_shortest_path_vertex = nullptr, *backward_shortest_path_vertex = nullptr;
+	BidirectionalDijkstraContext *neighbor_context;
+	weight_t shortest_path_bridge_weight = INFINITY_WEIGHT;
 	while (!forward_queue.empty() && !backward_queue.empty()) {
-		forward_vertex = forward_queue.top();
-		backward_vertex = backward_queue.top();
+		current_forward_search_vertex = forward_queue.top();
+		current_backward_search_vertex = backward_queue.top();
 		
-		if (shortest_ever_path < static_cast<BidirectionalDijkstraContext*>(forward_queue.top()->Context)->ForwardContext->Weight +
-				static_cast<BidirectionalDijkstraContext*>(backward_queue.top()->Context)->BackwardContext->Weight)
+		double best_forward_search = static_cast<BidirectionalDijkstraContext*>(forward_queue.top()->Context)->WeightInForwardSearch;
+		double best_backward_search = static_cast<BidirectionalDijkstraContext*>(backward_queue.top()->Context)->WeightInBackwardSearch;
+		//If path found and there no candidates to be shortest
+		if (shortest_path_weight < INFINITY_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
 		{
-			if (callback) callback(TargetFound, forward_shortest_path_vertex, backward_shortest_path_vertex, user_context);
-			if (callback) callback(AlgorithmFinished, nullptr, nullptr, user_context);
+			if (callback) callback(AlgorithmFinished, nullptr, user_context);
+			result.ForwardSearchLastVertex = forward_shortest_path_vertex;
+			result.BackwardSearchLastVertex = backward_shortest_path_vertex;
+			result.ConnectingEdgeWeight = shortest_path_bridge_weight;
+			result.ResultCode = Found;
+			return;
 		}
 		
+		//process current vertex in forward search
 		if (!forward_queue.empty()) {
-			context = static_cast<BidirectionalDijkstraContext*>(forward_vertex->Context);
-			if (callback) callback(VertexProcessingStarted, forward_vertex, nullptr, user_context);
+			current_vertex_context = static_cast<BidirectionalDijkstraContext*>(current_forward_search_vertex->Context);
+			if (callback) callback(VertexProcessingStarted, current_forward_search_vertex, user_context);
 		
-			for (const auto &fe : *(forward_vertex->Edges)) {
-				neighbour_forward_context = static_cast<BidirectionalDijkstraContext*>(fe->ToVertex->Context)->ForwardContext;
-				neighbour_backward_context = static_cast<BidirectionalDijkstraContext*>(fe->ToVertex->Context)->BackwardContext;
-				if (neighbour_forward_context->Processed) continue;
-				if (callback) callback(VertexDiscovered, fe->ToVertex, nullptr, user_context);
+			//process all outgoing edges from current forward search vertex
+			for (const auto &fe : *(current_forward_search_vertex->OutcomingEdges)) {
+				neighbor = fe->ToVertex;
+				neighbor_context = static_cast<BidirectionalDijkstraContext*>(neighbor->Context);
+				//if this vertex is already processed no need to process it again
+				if (neighbor_context->ProcessedByForwardSearch) continue;
+				if (callback) callback(VertexDiscovered, neighbor, user_context);
 				
-				if (neighbour_forward_context->Weight > context->ForwardContext->Weight + fe->Weight) {
-					neighbour_forward_context->Weight = context->ForwardContext->Weight + fe->Weight;
-					neighbour_forward_context->Parent = forward_vertex;
+				//release edge - update neighbor vertex weight and parent
+				if (neighbor_context->WeightInForwardSearch > current_vertex_context->WeightInForwardSearch + fe->Weight) {
+					neighbor_context->WeightInForwardSearch = current_vertex_context->WeightInForwardSearch + fe->Weight;
+					neighbor_context->ParentInForwardSearch = current_forward_search_vertex;
 
-					forward_queue.increase(static_cast<VertexHandle>(neighbour_forward_context->Handle), fe->ToVertex);
+					forward_queue.increase(static_cast<ForwardSearchVertexHandle>(neighbor_context->HandleInForwardSearch), neighbor);
 				}
-				if (neighbour_backward_context->Processed) {
-					new_short_path = neighbour_backward_context->Weight + fe->Weight + context->ForwardContext->Weight;
-					if (new_short_path < shortest_ever_path) {
-						shortest_ever_path = new_short_path;
-						forward_shortest_path_vertex = forward_vertex;
-						backward_shortest_path_vertex = fe->ToVertex;
+
+				//if neighbor vertex is already processed by backward search check weather we have new shortest path!
+				if (neighbor_context->ProcessedByBackwardSearch) {
+					new_path_weight = neighbor_context->WeightInBackwardSearch + fe->Weight + current_vertex_context->WeightInForwardSearch;
+					if (new_path_weight < shortest_path_weight) {
+						shortest_path_weight = new_path_weight;
+						forward_shortest_path_vertex = current_forward_search_vertex;
+						backward_shortest_path_vertex = neighbor;
+						shortest_path_bridge_weight = fe->Weight;
 					}
 				}
 			}
-			context->ForwardContext->Processed = true;
-			if (callback) callback(VertexProcessingFinished, forward_vertex, nullptr, user_context);
+			current_vertex_context->ProcessedByForwardSearch = true;
+			if (callback) callback(VertexProcessingFinished, current_forward_search_vertex, user_context);
 
-			if (forward_vertex == target) {
-				if (callback) callback(TargetFound, forward_vertex, nullptr, user_context);
-				result.ResultCode = Found;
-				break;
-			}
 			forward_queue.pop();
 		};
 
-		if (!backward_queue.empty()) {
-			context = static_cast<BidirectionalDijkstraContext*>(backward_vertex->Context);
-			if (callback) callback(VertexProcessingStarted, nullptr, backward_vertex, user_context);
-		
-			for (const auto &be : *(backward_vertex->IncomingEdges)) {
-				neighbour_backward_context = static_cast<BidirectionalDijkstraContext*>(be->ToVertex->Context)->BackwardContext;
-				neighbour_forward_context = static_cast<BidirectionalDijkstraContext*>(be->ToVertex->Context)->ForwardContext;
-				if (neighbour_backward_context->Processed) continue;
-				if (callback) callback(VertexDiscovered, nullptr, be->FromVertex, user_context);
-				
-				if (neighbour_backward_context->Weight > context->BackwardContext->Weight + be->Weight) {
-					neighbour_backward_context->Weight = context->BackwardContext->Weight + be->Weight;
-					neighbour_backward_context->Parent = backward_vertex;
+		if (shortest_path_weight < INFINITY_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
+		{
+			if (callback) callback(AlgorithmFinished, nullptr, user_context);
+			result.ForwardSearchLastVertex = forward_shortest_path_vertex;
+			result.BackwardSearchLastVertex = backward_shortest_path_vertex;
+			result.ConnectingEdgeWeight = shortest_path_bridge_weight;
+			result.ResultCode = Found;
+			return;
+		}
 
-					backward_queue.increase(static_cast<VertexHandle>(neighbour_backward_context->Handle), be->FromVertex);
+		//process current vertex in forward search
+		if (!backward_queue.empty()) {
+			current_vertex_context = static_cast<BidirectionalDijkstraContext*>(current_backward_search_vertex->Context);
+			if (callback) callback(VertexProcessingStarted, current_backward_search_vertex, user_context);
+		
+			//process all incoming edges to current backward search vertex
+			for (const auto &be : *(current_backward_search_vertex->IncomingEdges)) {
+				neighbor = be->FromVertex;
+				neighbor_context = static_cast<BidirectionalDijkstraContext*>(neighbor->Context);
+				//if this vertex is already processed no need to process it again
+				if (neighbor_context->ProcessedByBackwardSearch) continue;
+				if (callback) callback(VertexDiscovered, neighbor, user_context);
+				
+				//release edge - update neighbor vertex weight and parent
+				if (neighbor_context->WeightInBackwardSearch > current_vertex_context->WeightInBackwardSearch + be->Weight) {
+					neighbor_context->WeightInBackwardSearch = current_vertex_context->WeightInBackwardSearch + be->Weight;
+					neighbor_context->ParentInBackwardSearch = current_backward_search_vertex;
+
+					backward_queue.increase(static_cast<BackwardSearchVertexHandle>(neighbor_context->HandleInBackwardSearch), neighbor);
 				}
-				if (neighbour_forward_context->Processed) {
-					new_short_path = neighbour_forward_context->Weight + be->Weight + context->BackwardContext->Weight;
-					if (new_short_path < shortest_ever_path) {
-						shortest_ever_path = new_short_path;
-						forward_shortest_path_vertex = be->FromVertex;
-						backward_shortest_path_vertex = backward_vertex;
+
+				//if neighbor vertex is already processed by forward search check weather we have new shortest path!
+				if (neighbor_context->ProcessedByForwardSearch) {
+					new_path_weight = neighbor_context->WeightInForwardSearch + be->Weight + current_vertex_context->WeightInBackwardSearch;
+					if (new_path_weight < shortest_path_weight) {
+						shortest_path_weight = new_path_weight;
+						forward_shortest_path_vertex = neighbor;
+						backward_shortest_path_vertex = current_backward_search_vertex;
+						shortest_path_bridge_weight = be->Weight;
 					}
 				}
 			}
-			context->BackwardContext->Processed = true;
-			if (callback) callback(VertexProcessingFinished, nullptr, backward_vertex, user_context);
+			current_vertex_context->ProcessedByBackwardSearch = true;
+			if (callback) callback(VertexProcessingFinished, current_backward_search_vertex, user_context);
 
-			if (backward_vertex == source) {
-				if (callback) callback(TargetFound, nullptr, backward_vertex, user_context);
-				result.ResultCode = Found;
-				break;
-			}
 			backward_queue.pop();
 		};
 	}
-	if (callback) callback(AlgorithmFinished, nullptr, nullptr, user_context);
+	if (callback) callback(AlgorithmFinished, nullptr, user_context);
 };

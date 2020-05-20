@@ -20,10 +20,11 @@ typedef vector<Edge*> EdgeList;
 
 struct Vertex {
 	string Name;
-	EdgeList *Edges;
-	EdgeList *IncomingEdges = nullptr;
+	EdgeList *OutcomingEdges;
+	EdgeList *IncomingEdges;
 	void* Context = nullptr;
-	Vertex(string _Name, EdgeList *_Edges): Name(_Name), Edges(_Edges) {};
+	Vertex(string _Name, EdgeList *_FromEdges, EdgeList *_ToEdges):
+		Name(_Name), OutcomingEdges(_FromEdges), IncomingEdges(_ToEdges) {};
 };
 typedef Vertex* PVertex;
 
