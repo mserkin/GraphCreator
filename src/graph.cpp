@@ -42,7 +42,7 @@ bool addVertex (Vertex *vertex, Graph &graph, const Settings& settings) {
 }
 
 Vertex* addVertex (const string &name, Graph &graph, const Settings& settings) {
-	Vertex *vertex = new Vertex (name, new EdgeList(), new EdgeList());
+	Vertex *vertex = new Vertex (name);
 	bool success = addVertex(vertex, graph, settings);
 	if (success) {
 		return vertex;

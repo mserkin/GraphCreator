@@ -14,7 +14,6 @@
 #include "graph.h"
 #include "algo.h"
 
-
 map <AlgoResultCode, string> g_algo_result_text {
 	{Ok, "Ok"}, {Found, "Target found"}, {NotFound, "Target not found"}, {NoSourceOrTarget, "Source or target vertex undefined"}
 };
