@@ -14,6 +14,15 @@
 #include "graph.h"
 #include "algo.h"
 
+
+map <AlgoResultCode, string> g_algo_result_text {
+	{Ok, "Ok"}, {Found, "Target found"}, {NotFound, "Target not found"}, {NoSourceOrTarget, "Source or target vertex undefined"}
+};
+
+string AlgoResult::getText() {
+	return g_algo_result_text[this->ResultCode];
+}
+
 void bfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, void* user_context) {
 	if (!source || !target) {
 		result.ResultCode = NoSourceOrTarget;

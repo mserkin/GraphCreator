@@ -9,6 +9,7 @@
 #define ALGO_H_
 
 #include <boost/heap/binomial_heap.hpp>
+#include <map>
 #include "graph.h"
 
 enum AlgoEvent {
@@ -30,6 +31,7 @@ enum AlgoResultCode {
 
 struct AlgoResult {
 	AlgoResultCode ResultCode = NotFound;
+	string getText();
 };
 
 struct DijkstraContext;

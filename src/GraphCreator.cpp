@@ -8,6 +8,7 @@
 
 #include <ctime>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <map>
 #include <stack>
@@ -24,7 +25,22 @@
 
 using namespace std;
 
-const string VERSION = "1.6.0.10";
+const string VERSION = "1.7.0.11";
+
+const int FATAL_ERROR_FILE_OPEN_FAILURE = -1;
+const int FATAL_ERROR_NO_MEMORY = -2;
+const int FATAL_ERROR_FILE_READ_FAILURE = -3;
+const int FATAL_ERROR_ROOT_IS_NOT_ARRAY = -4;
+const int FATAL_ERROR_NAME_ELEMENT_NOT_FOUND = -5;
+const int FATAL_ERROR_FROM_VERTEX_NOT_FOUND = -6;
+const int FATAL_ERROR_TO_VERTEX_NOT_FOUND = -7;
+const int FATAL_ERROR_FAILED_TO_ADD_VERTEX = -8;
+const int FATAL_ERROR_FAILED_TO_ADD_EDGE = -9;
+const int FATAL_ERROR_UNKNOWN_FILE_TYPE = -10;
+const int FATAL_ERROR_SELF_LOOPS_ARE_PROHIBITED = -101;
+const int FATAL_ERROR_BIDIRECTION_EDGES_ARE_PROHIBITED = -102;
+const int FATAL_ERROR_EDGE_ALREADY_EXISTS = -103;
+const int FATAL_ERROR_NET_FILE_CONTAINS_SHORT_LINE = -201;
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;
@@ -41,20 +57,20 @@ int chooseToVertex(Vertex *vertex_from, const Settings &settings, Graph &graph,
 	Vertex *vertex_to = graph[vertex_ind];
 	if (!settings.SelfLoop && vertex_to == vertex_from) {
 		error_count++;
-		return -1;
+		return FATAL_ERROR_SELF_LOOPS_ARE_PROHIBITED;
 	}
 	if (!settings.BiDirectional) {
 		for (auto itb = vertex_to->OutcomingEdges->begin(); itb != vertex_to->OutcomingEdges->end(); itb++) {
 			if ((*itb)->ToVertex == vertex_from) {
 				error_count++;
-				return -2;
+				return FATAL_ERROR_BIDIRECTION_EDGES_ARE_PROHIBITED;
 			}
 		}
 	}
 	for (auto ite = vertex_from->OutcomingEdges->begin(); ite != vertex_from->OutcomingEdges->end(); ite++) {
 		if ((*ite)->ToVertex == vertex_to) {
 			error_count++;
-			return -3;
+			return FATAL_ERROR_EDGE_ALREADY_EXISTS;
 		}
 	}
 	return vertex_ind;
@@ -105,6 +121,7 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 
 void createGraph(Graph& graph, const Settings& settings) {
 	int error_count = 0;
+	int last_error = 0;
 	int total_edge_num = settings.MaxEdgeCount;
 	for (int i = 0; i < settings.VertexCount; i++) {
 		char *name = new char[4]; name[0] = 'V';
@@ -113,11 +130,9 @@ void createGraph(Graph& graph, const Settings& settings) {
 		Vertex *vertex = addVertex(name, graph, settings);
 		if (vertex == nullptr) {
 			cerr << "Cannot add vertex to graph.";
-			exit (-10);
+			exit(FATAL_ERROR_UNKNOWN_FILE_TYPE);
 		}
 	}
-
-	//printGraph(graph);
 
 	while (total_edge_num > 0 && error_count < 1000) {
 		for (auto it = graph.begin(); it != graph.end(); it++) {
@@ -127,15 +142,16 @@ void createGraph(Graph& graph, const Settings& settings) {
 			while (ver_edges > 0 && total_edge_num > 0 && error_count < 1000) {
 				int vertex_ind = chooseToVertex(*it, settings, graph, error_count);
 				if (vertex_ind < 0) {
+					last_error = vertex_ind;
 					cout << "Error creating edge for vertex " << static_cast<Vertex*>(*it)->Name << ":";
 					switch(vertex_ind) {
-					case -1:
+					case FATAL_ERROR_SELF_LOOPS_ARE_PROHIBITED:
 						cout << " self-loops are not allowed by settings" << endl;
 						break;
-					case -2:
+					case FATAL_ERROR_BIDIRECTION_EDGES_ARE_PROHIBITED:
 						cout << " bidirectional edges are not allowed by settings" << endl;
 						break;
-					case -3:
+					case FATAL_ERROR_EDGE_ALREADY_EXISTS:
 						cout << " such edge already exists" << endl;
 						break;
 					}
@@ -145,6 +161,7 @@ void createGraph(Graph& graph, const Settings& settings) {
 				double weight = rand() % (settings.MaxEdgeWeight - settings.MinEdgeWeight + 1) - settings.MinEdgeWeight;
 				Edge* edge = addEdge(*it, graph[vertex_ind], weight, graph, settings);
 				if (!edge) {
+					last_error = FATAL_ERROR_FAILED_TO_ADD_EDGE;
 					error_count++;
 					continue;
 				}
@@ -153,7 +170,7 @@ void createGraph(Graph& graph, const Settings& settings) {
 			}
 		}
 	}
-	cout << "Error count: " << error_count << endl;
+	cout << "Error count: " << error_count << "\nLast error: " << last_error << endl;
 }
 
 void loadGraph(Graph& graph, const Settings& settings) {
@@ -161,7 +178,7 @@ void loadGraph(Graph& graph, const Settings& settings) {
 
 	if (!fd){
 		cerr << "Cannot load graph from file: " << settings.FilePath;
-		exit(-1);
+		exit(FATAL_ERROR_FILE_OPEN_FAILURE);
 	}
 
 	fseek(fd, 0, SEEK_END);                          // устанавливаем позицию в конец файла
@@ -172,7 +189,7 @@ void loadGraph(Graph& graph, const Settings& settings) {
 	if (buffer == NULL)
 	{
 	  fputs("Memory allocation error.", stderr);
-	  exit(-2);
+	  exit(FATAL_ERROR_NO_MEMORY);
 	}
 
 	char *begin = buffer;
@@ -186,7 +203,7 @@ void loadGraph(Graph& graph, const Settings& settings) {
 	if (begin - buffer != lSize)
 	{
 	  fputs("Failed to read file", stderr);
-	  exit (-3);
+		exit(FATAL_ERROR_FILE_READ_FAILURE);
 	}
 
 	buffer[lSize] = 0;
@@ -201,7 +218,7 @@ void loadGraph(Graph& graph, const Settings& settings) {
 	doc.ParseInsitu(buffer);
 	if (!doc.IsArray()) {
 		fputs("Invalid file format. The root element is expected to be array.", stderr);
-		exit(-4);
+		exit(FATAL_ERROR_FILE_READ_FAILURE);
 	}
 
 	//creating all vertices
@@ -209,14 +226,14 @@ void loadGraph(Graph& graph, const Settings& settings) {
 	    auto vertex_obj1 = itr->GetObject();
 		if (!vertex_obj1.HasMember("name")) {
 			fputs("Invalid file format. \"name\" element is expected in object, but not found", stderr);
-			exit(-5);
+			exit(FATAL_ERROR_NAME_ELEMENT_NOT_FOUND);
 		}
 		string *str1 = new string (vertex_obj1["name"].GetString());
 
 		Vertex *vertex = addVertex(*str1, graph, settings);
 		if (vertex == nullptr) {
 			cerr << "Failed to add vertex.";
-			exit(-8);
+			exit(FATAL_ERROR_FAILED_TO_ADD_VERTEX);
 		}
 	}
 
@@ -228,7 +245,7 @@ void loadGraph(Graph& graph, const Settings& settings) {
 
 	    if (!from_vertex) {
 	    	cerr << "Vertex not found: " << *str_from;
-	    	exit(-6);
+			exit(FATAL_ERROR_FROM_VERTEX_NOT_FOUND);
 	    }
 
 	    if (vertex_obj2.HasMember("edges")) {
@@ -239,17 +256,81 @@ void loadGraph(Graph& graph, const Settings& settings) {
 				Vertex* to_vertex = findVertex(*str_to, graph);
 			    if (!to_vertex) {
 			    	cerr << "Vertex not found: " << *str_to;
-			    	exit(-7);
+					exit(FATAL_ERROR_TO_VERTEX_NOT_FOUND);
 			    }
 				double weight = edge_obj["weight"].GetDouble();
 				if (!addEdge(from_vertex, to_vertex, weight, graph, settings)) {
 					cerr << "Cannot add edge: " << *str_from << "->" << *str_to << endl;
-					exit(-8);
+					exit(FATAL_ERROR_FAILED_TO_ADD_EDGE);
 				}
 			}
 		}
 	}
 	free (buffer);
+}
+
+int loadNetGraph(Graph& graph, const Settings& settings) {
+	Vertex *vnet[9][9];
+	for (unsigned char y1 = 0; y1 < 9; y1++) {
+		for (unsigned char x1 = 0; x1 < 9; x1++) {
+			string name {"0:0"};
+			name[0] = 0x30 + x1;
+			name[2] = 0x30 + y1;
+			vnet[y1][x1] = addVertex(name, graph, settings);
+		}
+	}
+	for (int y2 = 0; y2 < 9; y2++) {
+		for (int x2 = 0; x2 < 9; x2++) {
+			if (y2 > 0) {
+				if (!addEdge(vnet[y2][x2], vnet[y2-1][x2], 1, graph, settings)){
+					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
+				}
+			}
+			if (y2 < 8) {
+				if (!addEdge(vnet[y2][x2], vnet[y2+1][x2], 1, graph, settings)) {
+					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
+				}
+			}
+			if (x2 > 0) {
+				if(!addEdge(vnet[y2][x2], vnet[y2][x2-1], 1, graph, settings)) {
+					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
+				}
+			}
+			if (x2 < 8) {
+				if (!addEdge(vnet[y2][x2], vnet[y2][x2+1], 1, graph, settings)) {
+					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
+				}
+			}
+		}
+	}
+
+	ifstream file(settings.FilePath.c_str());
+	string line;
+	int y3 = 0;
+	while(y3 < 9 && std::getline(file, line)){
+		if (line.length() < 9) {
+			cout << "Error: line is shorter than 9 charecters\n";
+			exit(FATAL_ERROR_NET_FILE_CONTAINS_SHORT_LINE);
+		}
+		for (int x3 = 0; x3 < 9; x3++) {
+			switch (line[x3]) {
+			case '+':
+				removeVertex(&vnet[y3][x3], graph);
+				break;
+			case '-':
+				break;
+			case 0x13:
+			case 0x10:
+				cout << "Error: line " << y3 << " is shorter than 9 characters\n";
+				exit(FATAL_ERROR_NET_FILE_CONTAINS_SHORT_LINE);
+			default:
+				cout << "Error: line "<< y3 << " contains illegal character " << line[x3] << "(" << int(line[x3]) << ")\n";
+				exit(FATAL_ERROR_NET_FILE_CONTAINS_SHORT_LINE);
+			}
+		}
+		y3++;
+	}
+	return 0;
 }
 
 void saveGraph(Graph& graph, const Settings& settings) {
@@ -323,7 +404,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 
 	switch (result.ResultCode) {
 	case NoSourceOrTarget:
-		cerr << "\tSource or target vertices are not defined." << endl;
+		cout << "\tSource or target vertices are not defined." << endl;
 		break;
 	case NotFound:
 		cout << "A path from source to target has not been found." << endl;
@@ -406,7 +487,20 @@ int main(int argc, char **argv) {
 	if (settings.Verbose) settings.print();
 
 	if (settings.LoadFromFile)	{
-		loadGraph(graph, settings);
+		if (settings.FilePath.rfind(".net") != string::npos) {
+			int err = loadNetGraph(graph, settings);
+			if (err < 0) {
+				cout << "Error: Failed loading net graph\n";
+				exit(err);
+			}
+		}
+		else if (settings.FilePath.rfind(".json") != string::npos) {
+			loadGraph(graph, settings);
+		}
+		else {
+			cout << "Error: Unknown file type!\n";
+			exit(FATAL_ERROR_UNKNOWN_FILE_TYPE);
+		}
 	}
 	else {
 		createGraph(graph, settings);
@@ -419,5 +513,6 @@ int main(int argc, char **argv) {
 	if (settings.SaveToFile) {
 		saveGraph(graph, settings);
 	}
+	cout << endl;
 	return 0;
 }

@@ -52,6 +52,51 @@ Vertex* addVertex (const string &name, Graph &graph, const Settings& settings) {
 	}
 }
 
+void removeVertex (Vertex **vertex, Graph &graph) {
+	PVertex pvertex = (*vertex);
+	PEdge pedge;
+	while (!pvertex->OutcomingEdges->empty()) {
+		//take last
+		auto it1 = pvertex->OutcomingEdges->end();
+		pedge = *(--it1);
+		//remove last
+		pvertex->OutcomingEdges->pop_back();
+		//find and remove edge from incomings
+		for (it1 = pedge->ToVertex->IncomingEdges->begin(); it1 !=pedge->ToVertex->IncomingEdges->end(); it1++) {
+			if ((*it1)->FromVertex == pvertex) {
+				pedge->ToVertex->IncomingEdges->erase(it1);
+				break;
+			}
+		}
+		delete pedge;
+	}
+	while (!pvertex->IncomingEdges->empty()) {
+		//take last
+		auto it2 = pvertex->IncomingEdges->end();
+		pedge = *(--it2);
+		//remove last
+		pvertex->IncomingEdges->pop_back();
+		//find edge in outcomings
+		for (it2 = pedge->FromVertex->OutcomingEdges->begin(); it2 !=pedge->FromVertex->OutcomingEdges->end(); it2++) {
+			if ((*it2)->ToVertex == pvertex) {
+				//Erase it :)
+				pedge->FromVertex->OutcomingEdges->erase(it2);
+				break;
+			}
+		}
+		delete pedge;
+	}
+
+	for (auto it3 = graph.begin(); it3 != graph.end(); it3++) {
+		if (!(*it3)->Name.compare(pvertex->Name)) {
+			graph.erase(it3);
+		}
+	}
+
+	delete pvertex;
+	vertex = nullptr;
+}
+
 Vertex* findVertex(const string &name, const Graph &graph) {
 	for (auto it = graph.begin(); it != graph.end(); it++) {
 		if (!(*it)->Name.compare(name)) {

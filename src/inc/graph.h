@@ -41,6 +41,7 @@ typedef vector<Vertex*> Graph;
 Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, const Settings& settings);
 bool addVertex (const Vertex *vertex, Graph &graph, const Settings& settings);
 Vertex* addVertex (const string &name, Graph &graph, const Settings& settings);
+void removeVertex (Vertex **vertex, Graph &graph);
 Vertex* findVertex(const string &name, const Graph &graph);
 int indexOfVertex(const Vertex *vertex, const Graph &graph);
 
