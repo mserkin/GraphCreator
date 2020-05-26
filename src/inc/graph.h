@@ -20,12 +20,19 @@ typedef vector<Edge*> EdgeList;
 
 struct Vertex {
 	string Name;
-	EdgeList *OutcomingEdges;
-	EdgeList *IncomingEdges;
+	EdgeList *OutcomingEdges = nullptr;
+	EdgeList *IncomingEdges = nullptr;
 	void* Context = nullptr;
-	Vertex(string _Name, EdgeList *_FromEdges, EdgeList *_ToEdges):
-		Name(_Name), OutcomingEdges(_FromEdges), IncomingEdges(_ToEdges) {};
+	Vertex(string _Name): Name(_Name) {
+		IncomingEdges = new EdgeList();
+		OutcomingEdges = new EdgeList();
+	};
+	virtual ~Vertex() {
+		delete OutcomingEdges;
+		delete IncomingEdges;
+	}
 };
+
 typedef Vertex* PVertex;
 
 struct Edge {
@@ -39,8 +46,9 @@ typedef Edge* PEdge;
 typedef vector<Vertex*> Graph;
 
 Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, const Settings& settings);
-bool addVertex (const Vertex *vertex, Graph &graph, const Settings& settings);
+bool addVertex (Vertex *vertex, Graph &graph, const Settings& settings);
 Vertex* addVertex (const string &name, Graph &graph, const Settings& settings);
+void removeVertex (Vertex **vertex, Graph &graph);
 Vertex* findVertex(const string &name, const Graph &graph);
 int indexOfVertex(const Vertex *vertex, const Graph &graph);
 

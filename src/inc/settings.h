@@ -11,7 +11,8 @@ enum Algorithm {
 	DepthFirstSearch,
 	Dijkstra,
 	FastDijkstra,
-	BellmanFord
+	BellmanFord,
+	Dijkstra2D,
 };
 
 struct Settings {

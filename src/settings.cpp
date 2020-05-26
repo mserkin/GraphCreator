@@ -21,13 +21,15 @@ map <Algorithm, string> AlgorithmNames = {
 		{DepthFirstSearch, "Depth-first search"},
 		{Dijkstra, "Dijkstra"},
 		{FastDijkstra, "Fast Dijkstra"},
-		{BellmanFord, "Bellman-Ford"}
+		{BellmanFord, "Bellman-Ford"},
+		{Dijkstra, "Dijkstra2D"}
 };
 
 map <string, Algorithm> AlgorithmArgs = {
 		{"bfs", BreadthFirstSearch},
 		{"dfs", DepthFirstSearch},
 		{"dijkstra", Dijkstra},
+		{"dijkstra2d", Dijkstra2D},
 		{"fast-dijkstra", FastDijkstra},
 		{"bellman-ford", BellmanFord}
 };
@@ -63,7 +65,7 @@ void displayUsage () {
 	cout << "\t-B, --bi-dir\t\t\tGraph can be bi-directional\n";
 	cout << "\t-w, --min-weight\t\tMinimum weight \n";
 	cout << "\t-W, --max-weight\t\tMaximum weight \n";
-	cout << "\t-a, --algorithm\t\t\tAlgorithm to use: bfs, dfs, dijkstra, bellman-ford, fast-dijkstra\n";
+	cout << "\t-a, --algorithm\t\t\tAlgorithm to use: bfs, dfs, dijkstra, dijkstra2d, fast-dijkstra, bellman-ford\n";
 	cout << "\t-S, --source-vertex\t\tSource vertex for single-source search\n";
 	cout << "\t-T, --target-vertex\t\tTarget vertex to find path to\n";
 	cout << "\t-v, --verbose\t\t\tPrint additional information\n";
@@ -148,7 +150,7 @@ void Settings::parse (int argc, char **argv) {
 				transform(s.begin(), s.end(), s.begin(),
 				    [](unsigned char c){ return std::tolower(c); });
 				if (AlgorithmArgs.find(s) == AlgorithmArgs.end()) {
-					cerr << "Wrong algorithm: " << s << endl;
+					cerr << "Unknown algorithm: " << s << endl;
 					exit(-20);
 				}
 				this->Algorithm = AlgorithmArgs[s];
