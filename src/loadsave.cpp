@@ -151,11 +151,15 @@ int load2dGraph(Graph& graph, const Settings& settings) {
 	}
 
 	ifstream file(settings.FilePath.c_str());
+	if (file.fail()) {
+		cout << "Error: failed to open file.\n";
+		return FATAL_ERROR_FILE_OPEN_FAILURE;
+	}
 	string line;
 	int y3 = 0;
 	while(y3 < 9 && std::getline(file, line)){
 		if (line.length() < 9) {
-			cout << "Error: line is shorter than 9 charecters\n";
+			cout << "Error: line is shorter than 9 charecters.\n";
 			exit(FATAL_ERROR_2D_FILE_CONTAINS_SHORT_LINE);
 		}
 		for (int x3 = 0; x3 < 9; x3++) {
@@ -175,6 +179,10 @@ int load2dGraph(Graph& graph, const Settings& settings) {
 			}
 		}
 		y3++;
+	}
+	if (y3 < 9) {
+		cout << "Error: file is shorter than needed.\n";
+		return FATAL_ERROR_2D_FILE_IS_SHORT;
 	}
 	return 0;
 }

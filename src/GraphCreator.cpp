@@ -25,7 +25,7 @@
 
 using namespace std;
 
-const string VERSION = "1.8.0.13";
+const string VERSION = "1.8.0.14";
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;
@@ -100,7 +100,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 	}
 	case Dijkstra: {
 		cout << "Applying Dijkstra minimal weight path search..." << endl;
-		dijkstra2d(static_cast<Vertex2d*>(source), static_cast<Vertex2d*>(target), graph, handleAlgorithmEvent, result, &user_context);
+		dijkstra(source, target, graph, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
 	case BellmanFord: {
@@ -113,7 +113,11 @@ void applyAlgo(Graph& graph, Settings &settings) {
 		bidirectionalDijkstra(source, target, graph, handleAlgorithmEvent, fast_dijkstra_result, &user_context);
 		result = fast_dijkstra_result;
 		break;
-
+	case Dijkstra2D: {
+		cout << "Applying Dijkstra2D minimal weight path search..." << endl;
+		dijkstra2d(static_cast<Vertex2d*>(source), static_cast<Vertex2d*>(target), graph, handleAlgorithmEvent, result, &user_context);
+		break;
+	}
 	default: return;
 	}
 
@@ -134,6 +138,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 		while (v != source) {
 			switch(settings.Algorithm) {
 			case Dijkstra:
+			case Dijkstra2D:
 			case BellmanFord:
 				v = static_cast<DijkstraContext*>(v->Context)->Parent;
 				break;
@@ -152,7 +157,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 
 		cout << "\t";
 		while (!path.empty()) {
-			cout << path.top()->Name << ";";
+			cout << path.top()->Name << "; ";
 			path.pop();
 		}
 
@@ -168,6 +173,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 		cout << "\n\tShortest path weight: ";
 		switch(settings.Algorithm) {
 		case Dijkstra:
+		case Dijkstra2D:
 		case BellmanFord:
 			cout << static_cast<DijkstraContext*>(target->Context)->Weight;
 			break;

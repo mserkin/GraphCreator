@@ -117,6 +117,7 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 	Vertex* v;
 	while (!queue.empty()) {
 		v = queue.top();
+		queue.pop();
 		context = static_cast<DijkstraContext*>(v->Context);
 		if (callback) callback(VertexProcessingStarted, v, user_context);
 		for (const auto &e : *(v->OutcomingEdges)) {
@@ -144,7 +145,6 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 			if (callback) callback(AlgorithmFinished, nullptr, user_context);
 			return;
 		}
-		queue.pop();
 	};
 
 	if (callback) callback(AlgorithmFinished, nullptr, user_context);

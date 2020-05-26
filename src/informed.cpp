@@ -27,7 +27,8 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 
 	while (!queue.empty()) {
 		Vertex2d* v_current = static_cast<Vertex2d*>(queue.top());
-		int current_coef = abs(v_current->X - x_target) + abs(v_current->X - x_target);
+		queue.pop();
+		weight_t current_coef = abs(v_current->X - x_target) + abs(v_current->Y - y_target);
 		current_context = static_cast<DijkstraContext*>(v_current->Context);
 		if (callback) callback(VertexProcessingStarted, v_current, user_context);
 		for (const auto &e : *(v_current->OutcomingEdges)) {
@@ -36,7 +37,7 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 			if (v_to_context->Processed) continue;
 			if (callback) callback(VertexDiscovered, v_to, user_context);
 			weight_t to_coef = abs(v_to->X - x_target) + abs(v_to->Y - y_target);
-			weight_t to_weight_to_be = current_context->Weight - current_coef + e->Weight + to_coef;
+			weight_t to_weight_to_be = current_context->Weight + e->Weight + (to_coef - current_coef)/2;
 			if (v_to_context->Weight > to_weight_to_be) {
 				v_to_context->Weight = to_weight_to_be;
 				v_to_context->Parent = static_cast<Vertex*>(v_current);
@@ -58,7 +59,6 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 			if (callback) callback(AlgorithmFinished, nullptr, user_context);
 			return;
 		}
-		queue.pop();
 	};
 
 	if (callback) callback(AlgorithmFinished, nullptr, user_context);
