@@ -18,7 +18,7 @@ struct Vertex2d : public Vertex {
 	Vertex2d(string _Name, int _X,  int _Y): Vertex(_Name), X(_X), Y(_Y) {};
 };
 
-void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callback,  AlgoResult& result, void* user_context = nullptr);
+void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callback,  AlgoResult& result, void* user_context = nullptr, double coefficient = 0.5);
 
 
 #endif /* INC_INFORMED_H_ */

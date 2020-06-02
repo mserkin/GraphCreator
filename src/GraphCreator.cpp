@@ -25,7 +25,7 @@
 
 using namespace std;
 
-const string VERSION = "1.8.0.14";
+const string VERSION = "1.9.0.15";
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;

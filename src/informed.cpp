@@ -12,7 +12,7 @@
 
 
 
-void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callback,  AlgoResult& result, void* user_context) {
+void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context, double coefficient) {
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<DijkstraVertexComparator>> queue;
 	int x_target = target->X, y_target = target->Y;
 	DijkstraContext *current_context;
@@ -37,17 +37,12 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 			if (v_to_context->Processed) continue;
 			if (callback) callback(VertexDiscovered, v_to, user_context);
 			weight_t to_coef = abs(v_to->X - x_target) + abs(v_to->Y - y_target);
-			weight_t to_weight_to_be = current_context->Weight + e->Weight + (to_coef - current_coef)/2;
+			weight_t to_weight_to_be = current_context->Weight + e->Weight + (to_coef - current_coef)*coefficient;
 			if (v_to_context->Weight > to_weight_to_be) {
 				v_to_context->Weight = to_weight_to_be;
 				v_to_context->Parent = static_cast<Vertex*>(v_current);
 
 				queue.increase(static_cast<VertexHandle>(v_to_context->Handle), e->ToVertex);
-
-				//cout << "After increase:" << std::endl;
-			 	//for (auto it = queue.ordered_begin(); it != queue.ordered_end(); ++it) {
-			    //	std::cout << (*it)->Name << ":" << static_cast<DijkstraContext*>((*it)->Context)->Weight << std::endl;
-			    //}
 			}
 		}
 		current_context->Processed = true;

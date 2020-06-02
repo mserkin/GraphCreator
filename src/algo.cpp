@@ -92,10 +92,7 @@ void dfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
 }
 
 bool DijkstraVertexComparator::operator()(const PVertex& v1, const PVertex& v2) const {
-	DijkstraContext *c1, *c2;
-	c1 = static_cast<DijkstraContext*>(v1->Context);
-	c2 = static_cast<DijkstraContext*>(v2->Context);
-	if (c1->Weight > c2->Weight )
+	if (static_cast<DijkstraContext*>(v1->Context)->Weight > static_cast<DijkstraContext*>(v2->Context)->Weight )
 		return true;
 	else
 		return false;
@@ -104,13 +101,13 @@ bool DijkstraVertexComparator::operator()(const PVertex& v1, const PVertex& v2) 
 
 void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<DijkstraVertexComparator>> queue;
-	DijkstraContext *context;
+	DijkstraContext *current_vertex_context;
 	for (const auto& v : graph) {
-		context = new DijkstraContext();
+		current_vertex_context = new DijkstraContext();
 		if (v == source) {
-			context->Weight = 0;
+			current_vertex_context->Weight = 0;
 		}
-		v->Context = context;
+		v->Context = current_vertex_context;
 		static_cast<DijkstraContext*>(v->Context)->Handle = queue.push(v);
 	}
 
@@ -118,22 +115,19 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 	while (!queue.empty()) {
 		v = queue.top();
 		queue.pop();
-		context = static_cast<DijkstraContext*>(v->Context);
+		current_vertex_context = static_cast<DijkstraContext*>(v->Context);
 		if (callback) callback(VertexProcessingStarted, v, user_context);
 		for (const auto &e : *(v->OutcomingEdges)) {
-			if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Processed) continue;
+			DijkstraContext *neightbor_vertex_context = static_cast<DijkstraContext*>(e->ToVertex->Context);
+			if (neightbor_vertex_context->Processed) continue;
 			if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
 
-			if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight > context->Weight + e->Weight) {
-				static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight = context->Weight + e->Weight;
-				static_cast<DijkstraContext*>(e->ToVertex->Context)->Parent = v;
+			weight_t new_weight = current_vertex_context->Weight + e->Weight;
+			if (neightbor_vertex_context->Weight > new_weight) {
+				neightbor_vertex_context->Weight = new_weight;
+				neightbor_vertex_context->Parent = v;
 
-				queue.increase(static_cast<VertexHandle>(static_cast<DijkstraContext*>(e->ToVertex->Context)->Handle), e->ToVertex);
-
-				//cout << "After increase:" << std::endl;
-			 	//for (auto it = queue.ordered_begin(); it != queue.ordered_end(); ++it) {
-			    //	std::cout << (*it)->Name << ":" << static_cast<DijkstraContext*>((*it)->Context)->Weight << std::endl;
-			    //}
+				queue.increase(static_cast<VertexHandle>(neightbor_vertex_context->Handle), e->ToVertex);
 			}
 		}
 		static_cast<DijkstraContext*>(v->Context)->Processed = true;
@@ -152,34 +146,33 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 }
 
 void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
-	DijkstraContext *context;
+	DijkstraContext *current_vertex_context;
 	for (const auto& v : graph) {
-		context = new DijkstraContext();
+		current_vertex_context = new DijkstraContext();
 		if (v == source) {
-			context->Weight = 0;
+			current_vertex_context->Weight = 0;
 		}
-		v->Context = context;
+		v->Context = current_vertex_context;
 	}
 
 	for (std::vector<Vertex*>::size_type i = 0; i <= graph.size(); i++) {
 		for (const auto& v : graph) {
-			if (callback) callback(VertexProcessingStarted, v, user_context);
-			context = static_cast<DijkstraContext*>(v->Context);
+			current_vertex_context = static_cast<DijkstraContext*>(v->Context);
 			for (const auto &e : *(v->OutcomingEdges)) {
 				if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
-
-				if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight > context->Weight + e->Weight) {
-					static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight = context->Weight + e->Weight;
-					static_cast<DijkstraContext*>(e->ToVertex->Context)->Parent = v;
+				DijkstraContext *neighbor_vertex_context = static_cast<DijkstraContext*>(e->ToVertex->Context);
+				weight_t new_weight = current_vertex_context->Weight + e->Weight;
+				if (neighbor_vertex_context->Weight > new_weight) {
+					neighbor_vertex_context->Weight = new_weight;
+					neighbor_vertex_context->Parent = v;
 					if (i == graph.size()) {
 						if (callback) callback(NegativeLoopDetected, v, user_context);
-						if (callback) callback(AlgorithmFinished, nullptr, user_context);	
+						if (callback) callback(AlgorithmFinished, nullptr, user_context);
 						result.ResultCode = NotFound;
 						return;
 					}
 				}
 			}
-			if (callback) callback(VertexProcessingFinished, v, user_context);
 		}
 	}
 
