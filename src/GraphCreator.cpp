@@ -125,6 +125,9 @@ void applyAlgo(Graph& graph, Settings &settings) {
 	case NoSourceOrTarget:
 		cout << "\tSource or target vertices are not defined." << endl;
 		break;
+	case SourceIsTarget:
+		cout << "\tSource and target are the same vertex." << endl;
+		break;
 	case NotFound:
 		cout << "A path from source to target has not been found." << endl;
 		break;

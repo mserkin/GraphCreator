@@ -45,11 +45,22 @@ struct Edge {
 typedef Edge* PEdge;
 typedef vector<Vertex*> Graph;
 
+//Add edge from one given vertex to another given vertex
 Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, const Settings& settings);
+
+//Add vertex to a graph
 bool addVertex (Vertex *vertex, Graph &graph, const Settings& settings);
+
+//Create vertex and add it to a graph
 Vertex* addVertex (const string &name, Graph &graph, const Settings& settings);
+
+//Remove vertex from the graph
 void removeVertex (Vertex **vertex, Graph &graph);
+
+//find vertex with the given name in the graph
 Vertex* findVertex(const string &name, const Graph &graph);
+
+//find the given vertex in the graph and return its index
 int indexOfVertex(const Vertex *vertex, const Graph &graph);
 
 

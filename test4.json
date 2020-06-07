@@ -1,0 +1,26 @@
+[
+  {
+    "name": "V0",
+    "edges": [
+      {
+        "to_vertex": "V1",
+        "weight": 7.0
+      },
+      {
+        "to_vertex": "V2",
+        "weight": 7.0
+      }
+    ]
+  },
+  {
+    "name": "V1",
+    "edges": []
+  },
+  {
+    "name": "V2",
+    "edges": [{
+        "to_vertex": "V1",
+        "weight": 7.0
+      }]
+  }
+]
