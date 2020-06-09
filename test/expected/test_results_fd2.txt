@@ -1,0 +1,5 @@
+ GraphCreator [OPTIONS]
+Applying Bidirectional Dijkstra minimal weight path search...
+Vertices checked: 4, processed: 4
+A path from source to target has not been found.
+

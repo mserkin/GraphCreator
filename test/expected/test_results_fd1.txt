@@ -1,0 +1,4 @@
+ GraphCreator [OPTIONS]
+Applying Bidirectional Dijkstra minimal weight path search...
+	Source and target are the same vertex.
+

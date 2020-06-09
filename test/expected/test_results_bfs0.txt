@@ -1,0 +1,4 @@
+ GraphCreator [OPTIONS]
+Applying breadth-first search...
+	Source and target are the same vertex.
+

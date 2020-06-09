@@ -110,6 +110,11 @@ bool DijkstraVertexComparator::operator()(const PVertex& v1, const PVertex& v2) 
 }
 
 void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
+	if (!source || !target) {
+		result.ResultCode = NoSourceOrTarget;
+		return;
+	};
+
 	if (source == target) {
 		result.ResultCode = SourceIsTarget;
 		return;
@@ -167,6 +172,11 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 }
 
 void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
+	if (!source || !target) {
+		result.ResultCode = NoSourceOrTarget;
+		return;
+	};
+
 	if (source == target) {
 		result.ResultCode = SourceIsTarget;
 		return;
@@ -185,7 +195,6 @@ void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback
 		for (const auto& v : graph) {
 			current_vertex_context = static_cast<DijkstraContext*>(v->Context);
 			for (const auto &e : *(v->OutcomingEdges)) {
-				if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
 				DijkstraContext *neighbor_vertex_context = static_cast<DijkstraContext*>(e->ToVertex->Context);
 				weight_t new_weight = current_vertex_context->Weight + e->Weight;
 				if (neighbor_vertex_context->Weight > new_weight) {
@@ -194,7 +203,7 @@ void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback
 					if (i == graph.size()) {
 						if (callback) callback(NegativeLoopDetected, v, user_context);
 						if (callback) callback(AlgorithmFinished, nullptr, user_context);
-						result.ResultCode = NotFound;
+						result.ResultCode = NegativeLoopFound;
 						return;
 					}
 				}
@@ -219,6 +228,11 @@ bool FastDijkstraBackwardComparator::operator()(const PVertex& v1, const PVertex
 }
 
 void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, BidirectionalDijkstraResult& result, void* user_context) {
+	if (!source || !target) {
+		result.ResultCode = NoSourceOrTarget;
+		return;
+	};
+
 	if (source == target) {
 		result.ResultCode = SourceIsTarget;
 		return;

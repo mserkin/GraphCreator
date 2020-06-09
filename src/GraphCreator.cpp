@@ -6,7 +6,6 @@
 // Description : Hello World in C++, Ansi-style
 //============================================================================
 
-//Todo: findVertex use binary search
 
 #include <ctime>
 #include <iostream>
@@ -25,7 +24,7 @@
 
 using namespace std;
 
-const string VERSION = "1.9.0.15";
+const string VERSION = "1.10.0.16";
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;
@@ -79,6 +78,28 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 	}
 }
 
+void printPathsToAllVertices(Vertex* source, Graph& graph) {
+	stack<Vertex*> st;
+	for (auto current_vertex: graph) {
+		DijkstraContext* context = static_cast<DijkstraContext*>(current_vertex->Context);
+		if (context->Weight == INFINITE_WEIGHT) {
+			cout << current_vertex->Name << ": no path from source to this vertex\n";
+			continue;
+		}
+		Vertex *vertex = current_vertex;
+		while (vertex != source) {
+			st.push(vertex);
+			vertex = static_cast<DijkstraContext*>(vertex->Context)->Parent;
+		}
+		cout << source->Name;
+		while (!st.empty()) {
+			cout << "->" << st.top()->Name;
+			st.pop();
+		}
+		cout << " weight: " << static_cast<DijkstraContext*>(current_vertex->Context)->Weight << "\n";
+	}
+}
+
 void applyAlgo(Graph& graph, Settings &settings) {
 	if (settings.Algorithm == None) return;
 	Vertex *source = findVertex(settings.SourceVertex, graph);
@@ -106,6 +127,9 @@ void applyAlgo(Graph& graph, Settings &settings) {
 	case BellmanFord: {
 		cout << "Applying Bellman-Ford minimal weight path search..." << endl;
 		bellmanFord(source, target, graph, handleAlgorithmEvent, result, &user_context);
+		if (result.ResultCode == Found || result.ResultCode == NotFound) {
+			printPathsToAllVertices(source, graph);
+		}
 		break;
 	}
 	case FastDijkstra:
@@ -130,6 +154,9 @@ void applyAlgo(Graph& graph, Settings &settings) {
 		break;
 	case NotFound:
 		cout << "A path from source to target has not been found." << endl;
+		break;
+	case NegativeLoopFound:
+		cout << "Negative loop was detected and algorithm execution stopped." << endl;
 		break;
 	case Found: {
 		cout << "The path from source to target has been found: " << endl;

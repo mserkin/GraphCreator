@@ -24,7 +24,8 @@ enum AlgoResultCode {
 	Found,                      //Found a path, shortest path or minimal-weight path
 	NotFound,                   //No paths from source to target was not found
 	NoSourceOrTarget,           //Source or target vertex was not found in graph
-	SourceIsTarget              //Source and target are the same vertex
+	SourceIsTarget,             //Source and target are the same vertex
+	NegativeLoopFound		    //Negative loop was detected and algorithm stopped
 };
 
 struct AlgoResult {
@@ -151,12 +152,16 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 
 //Bellman-Ford algorithm implementation. Finds the minimum weight path from single source to *ALL* other vertices in a weighted graph.
 //Found paths and its weights are accessible using context information associated to vertices after run.
-//Will not send VertexProcessingStarted and VertexProcessingFinished events as all vertices processed several times
+//Do not send VertexDiscovered, VertexProcessingStarted and VertexProcessingFinished events as all vertices processed several times
+//Sends NegativeLoopDetected with vertex where negative loop was detected
 //Complexity O(|V||E|)
 //source - source vertex
 //target - target vertex
 //callback - function that is called by algorithm to supple events to caller
-//result - result of algorithm execution: Found - path from source to target found or NotFound if no path from source to target was found
+//result - result of algorithm execution:
+//          Found - path from source to target found
+//          NotFound - no path from source to target was found
+//          NegativeLoopFound - negative loop was detected and algorithm stopped. Results (vertex context information) are undefined.
 //user_context - pointer to some info - may be needed to understand the origin of event if several algorithm
 //               launches were made simultaneously
 //Way to get found path is the same as for Dijkstra algorithm

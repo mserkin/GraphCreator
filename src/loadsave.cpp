@@ -18,6 +18,7 @@
 
 void loadGraph(Graph& graph, const Settings& settings) {
 	using namespace std;
+
 	FILE * fd = fopen(settings.FilePath.c_str(), "rb");
 
 	if (!fd){

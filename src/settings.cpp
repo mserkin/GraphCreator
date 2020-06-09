@@ -61,8 +61,8 @@ void displayUsage () {
 	cout << "\t-s, --save\t\t\tSave graph from file\n";
 	cout << "\t-V, --vertex-count\t\tNumber of vertices in the graph\n";
 	cout << "\t-E, --edge-count\t\tMaximum number of edges in the graph\n";
-	cout << "\t-L, --self-loops\t\tVertices can edges that join a vertex to itself\n";
-	cout << "\t-B, --bi-dir\t\t\tGraph can be bi-directional\n";
+	cout << "\t-L, --self-loops\t\tProhibit edges that join a vertex to itself\n";
+	cout << "\t-B, --bi-dir\t\t\tProhibit bi-directional edges\n";
 	cout << "\t-w, --min-weight\t\tMinimum weight \n";
 	cout << "\t-W, --max-weight\t\tMaximum weight \n";
 	cout << "\t-a, --algorithm\t\t\tAlgorithm to use: bfs, dfs, dijkstra, dijkstra2d, fast-dijkstra, bellman-ford\n";
@@ -122,11 +122,11 @@ void Settings::parse (int argc, char **argv) {
 				break;
 
 			case 'L':
-				this->SelfLoop = true;
+				this->SelfLoop = false;
 				break;
 
 			case 'B':
-				this->BiDirectional = true;
+				this->BiDirectional = false;
 				break;
 
 			case 'v':
@@ -185,5 +185,3 @@ void Settings::parse (int argc, char **argv) {
 		opt = getopt_long( argc, argv, optString, longOpts, &longIndex );
 	}
 }
-
-

@@ -19,8 +19,8 @@ struct Settings {
 	Algorithm Algorithm = None;
 	int VertexCount = 6;
 	int MaxEdgeCount = 8;
-	bool SelfLoop = false;
-	bool BiDirectional = false;
+	bool SelfLoop = true;
+	bool BiDirectional = true;
 	bool Verbose = false;
 	int MinEdgeWeight = 0;
 	int MaxEdgeWeight = 0;

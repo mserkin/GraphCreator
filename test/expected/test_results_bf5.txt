@@ -1,0 +1,10 @@
+ GraphCreator [OPTIONS]
+Applying Bellman-Ford minimal weight path search...
+V0 weight: 0
+V1: no path from source to this vertex
+V0->V2 weight: 7
+V0->V3 weight: 7
+V0->V3->V4 weight: 14
+V0->V2->V5 weight: 14
+A path from source to target has not been found.
+

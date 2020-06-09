@@ -13,6 +13,15 @@
 
 
 void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context, double coefficient) {
+	if (!source || !target) {
+		result.ResultCode = NoSourceOrTarget;
+		return;
+	};
+
+	if (source == target) {
+		result.ResultCode = SourceIsTarget;
+		return;
+	};
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<DijkstraVertexComparator>> queue;
 	int x_target = target->X, y_target = target->Y;
 	DijkstraContext *current_context;

@@ -1,0 +1,5 @@
+ GraphCreator [OPTIONS]
+Applying Bellman-Ford minimal weight path search...
+Negative loop detected at V2
+Negative loop was detected and algorithm execution stopped.
+
