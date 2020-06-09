@@ -1,0 +1,8 @@
+ GraphCreator [OPTIONS]
+Applying depth-first search...
+target found: V1
+Vertices checked: 3, processed: 2
+The path from source to target has been found: 
+	V0; V2; V1; 
+	Shortest path weight: unknown (used algorithm is not capable to detect path of lowest weight)
+

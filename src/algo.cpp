@@ -28,6 +28,11 @@ void bfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
 		return;
 	};
 
+	if (source == target) {
+		result.ResultCode = SourceIsTarget;
+		return;
+	};
+
 	queue<Vertex*> q;
 	q.push(source);
 	source->Context = (void*)true;
@@ -63,6 +68,11 @@ void dfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
 		return;
 	};
 
+	if (source == target) {
+		result.ResultCode = SourceIsTarget;
+		return;
+	};
+
 	stack<Vertex*> q;
 	q.push(source);
 	source->Context = (void*)true;
@@ -92,10 +102,7 @@ void dfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
 }
 
 bool DijkstraVertexComparator::operator()(const PVertex& v1, const PVertex& v2) const {
-	DijkstraContext *c1, *c2;
-	c1 = static_cast<DijkstraContext*>(v1->Context);
-	c2 = static_cast<DijkstraContext*>(v2->Context);
-	if (c1->Weight > c2->Weight )
+	if (static_cast<DijkstraContext*>(v1->Context)->Weight > static_cast<DijkstraContext*>(v2->Context)->Weight )
 		return true;
 	else
 		return false;
@@ -103,14 +110,24 @@ bool DijkstraVertexComparator::operator()(const PVertex& v1, const PVertex& v2) 
 }
 
 void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
+	if (!source || !target) {
+		result.ResultCode = NoSourceOrTarget;
+		return;
+	};
+
+	if (source == target) {
+		result.ResultCode = SourceIsTarget;
+		return;
+	};
+
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<DijkstraVertexComparator>> queue;
-	DijkstraContext *context;
+	DijkstraContext *current_vertex_context;
 	for (const auto& v : graph) {
-		context = new DijkstraContext();
+		current_vertex_context = new DijkstraContext();
 		if (v == source) {
-			context->Weight = 0;
+			current_vertex_context->Weight = 0;
 		}
-		v->Context = context;
+		v->Context = current_vertex_context;
 		static_cast<DijkstraContext*>(v->Context)->Handle = queue.push(v);
 	}
 
@@ -118,22 +135,25 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 	while (!queue.empty()) {
 		v = queue.top();
 		queue.pop();
-		context = static_cast<DijkstraContext*>(v->Context);
+		current_vertex_context = static_cast<DijkstraContext*>(v->Context);
+
+		//Unreachable vertex was taken! Thus there is no more unprocessed vertices that can be reached from source
+		if(current_vertex_context->Weight == INFINITE_WEIGHT) {
+			break;
+		}
+
 		if (callback) callback(VertexProcessingStarted, v, user_context);
 		for (const auto &e : *(v->OutcomingEdges)) {
-			if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Processed) continue;
+			DijkstraContext *neightbor_vertex_context = static_cast<DijkstraContext*>(e->ToVertex->Context);
+			if (neightbor_vertex_context->Processed) continue;
 			if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
 
-			if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight > context->Weight + e->Weight) {
-				static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight = context->Weight + e->Weight;
-				static_cast<DijkstraContext*>(e->ToVertex->Context)->Parent = v;
+			weight_t new_weight = current_vertex_context->Weight + e->Weight;
+			if (neightbor_vertex_context->Weight > new_weight) {
+				neightbor_vertex_context->Weight = new_weight;
+				neightbor_vertex_context->Parent = v;
 
-				queue.increase(static_cast<VertexHandle>(static_cast<DijkstraContext*>(e->ToVertex->Context)->Handle), e->ToVertex);
-
-				//cout << "After increase:" << std::endl;
-			 	//for (auto it = queue.ordered_begin(); it != queue.ordered_end(); ++it) {
-			    //	std::cout << (*it)->Name << ":" << static_cast<DijkstraContext*>((*it)->Context)->Weight << std::endl;
-			    //}
+				queue.increase(static_cast<VertexHandle>(neightbor_vertex_context->Handle), e->ToVertex);
 			}
 		}
 		static_cast<DijkstraContext*>(v->Context)->Processed = true;
@@ -152,39 +172,47 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 }
 
 void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
-	DijkstraContext *context;
+	if (!source || !target) {
+		result.ResultCode = NoSourceOrTarget;
+		return;
+	};
+
+	if (source == target) {
+		result.ResultCode = SourceIsTarget;
+		return;
+	};
+
+	DijkstraContext *current_vertex_context;
 	for (const auto& v : graph) {
-		context = new DijkstraContext();
+		current_vertex_context = new DijkstraContext();
 		if (v == source) {
-			context->Weight = 0;
+			current_vertex_context->Weight = 0;
 		}
-		v->Context = context;
+		v->Context = current_vertex_context;
 	}
 
 	for (std::vector<Vertex*>::size_type i = 0; i <= graph.size(); i++) {
 		for (const auto& v : graph) {
-			if (callback) callback(VertexProcessingStarted, v, user_context);
-			context = static_cast<DijkstraContext*>(v->Context);
+			current_vertex_context = static_cast<DijkstraContext*>(v->Context);
 			for (const auto &e : *(v->OutcomingEdges)) {
-				if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
-
-				if (static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight > context->Weight + e->Weight) {
-					static_cast<DijkstraContext*>(e->ToVertex->Context)->Weight = context->Weight + e->Weight;
-					static_cast<DijkstraContext*>(e->ToVertex->Context)->Parent = v;
+				DijkstraContext *neighbor_vertex_context = static_cast<DijkstraContext*>(e->ToVertex->Context);
+				weight_t new_weight = current_vertex_context->Weight + e->Weight;
+				if (neighbor_vertex_context->Weight > new_weight) {
+					neighbor_vertex_context->Weight = new_weight;
+					neighbor_vertex_context->Parent = v;
 					if (i == graph.size()) {
 						if (callback) callback(NegativeLoopDetected, v, user_context);
-						if (callback) callback(AlgorithmFinished, nullptr, user_context);	
-						result.ResultCode = NotFound;
+						if (callback) callback(AlgorithmFinished, nullptr, user_context);
+						result.ResultCode = NegativeLoopFound;
 						return;
 					}
 				}
 			}
-			if (callback) callback(VertexProcessingFinished, v, user_context);
 		}
 	}
 
 	if (callback) callback(AlgorithmFinished, nullptr, user_context);
-	result.ResultCode = (static_cast<DijkstraContext*>(target->Context)->Weight < INFINITY_WEIGHT) ? Found : NotFound;
+	result.ResultCode = (static_cast<DijkstraContext*>(target->Context)->Weight < INFINITE_WEIGHT) ? Found : NotFound;
 }
 
 bool FastDijkstraForwardComparator::operator()(const PVertex& v1, const PVertex& v2) const {
@@ -200,6 +228,16 @@ bool FastDijkstraBackwardComparator::operator()(const PVertex& v1, const PVertex
 }
 
 void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, BidirectionalDijkstraResult& result, void* user_context) {
+	if (!source || !target) {
+		result.ResultCode = NoSourceOrTarget;
+		return;
+	};
+
+	if (source == target) {
+		result.ResultCode = SourceIsTarget;
+		return;
+	};
+
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<FastDijkstraForwardComparator>> forward_queue;
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<FastDijkstraBackwardComparator>> backward_queue;
 	BidirectionalDijkstraContext *current_vertex_context;
@@ -218,11 +256,11 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 		current_vertex_context->HandleInBackwardSearch = backward_queue.push(v);
 	}
 	
-	weight_t shortest_path_weight = INFINITY_WEIGHT, new_path_weight;
+	weight_t shortest_path_weight = INFINITE_WEIGHT, new_path_weight;
 	Vertex *current_forward_search_vertex, *current_backward_search_vertex, *neighbor;
 	Vertex *forward_shortest_path_vertex = nullptr, *backward_shortest_path_vertex = nullptr;
 	BidirectionalDijkstraContext *neighbor_context;
-	weight_t shortest_path_bridge_weight = INFINITY_WEIGHT;
+	weight_t shortest_path_bridge_weight = INFINITE_WEIGHT;
 	while (!forward_queue.empty() && !backward_queue.empty()) {
 		current_forward_search_vertex = forward_queue.top();
 		current_backward_search_vertex = backward_queue.top();
@@ -230,7 +268,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 		double best_forward_search = static_cast<BidirectionalDijkstraContext*>(forward_queue.top()->Context)->WeightInForwardSearch;
 		double best_backward_search = static_cast<BidirectionalDijkstraContext*>(backward_queue.top()->Context)->WeightInBackwardSearch;
 		//If path found and there no candidates to be shortest
-		if (shortest_path_weight < INFINITY_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
+		if (shortest_path_weight < INFINITE_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
 		{
 			if (callback) callback(AlgorithmFinished, nullptr, user_context);
 			result.ForwardSearchLastVertex = forward_shortest_path_vertex;
@@ -278,7 +316,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 			forward_queue.pop();
 		};
 
-		if (shortest_path_weight < INFINITY_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
+		if (shortest_path_weight < INFINITE_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
 		{
 			if (callback) callback(AlgorithmFinished, nullptr, user_context);
 			result.ForwardSearchLastVertex = forward_shortest_path_vertex;

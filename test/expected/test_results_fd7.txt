@@ -1,0 +1,7 @@
+ GraphCreator [OPTIONS]
+Applying Bidirectional Dijkstra minimal weight path search...
+Vertices checked: 8, processed: 6
+The path from source to target has been found: 
+	V0; V2; V1;
+	Shortest path weight: 14
+

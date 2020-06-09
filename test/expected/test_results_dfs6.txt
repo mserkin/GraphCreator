@@ -1,0 +1,6 @@
+ GraphCreator [OPTIONS]
+Applying depth-first search...
+target not found. 
+Vertices checked: 4, processed: 5
+A path from source to target has not been found.
+

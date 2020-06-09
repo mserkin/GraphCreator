@@ -11,8 +11,10 @@
 #include "graph.h"
 #include "settings.h"
 
+//Create graph with parameters defined by settings
 void createGraph(Graph& graph, const Settings& settings);
 
+//Select random vertex from the graph to which edge could be created
 int chooseToVertex(Vertex *vertex_from, const Settings &settings, Graph &graph,
 		int &error_count);
 

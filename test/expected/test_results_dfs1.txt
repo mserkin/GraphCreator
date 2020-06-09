@@ -1,0 +1,4 @@
+ GraphCreator [OPTIONS]
+Applying depth-first search...
+	Source and target are the same vertex.
+

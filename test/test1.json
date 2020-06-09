@@ -1,0 +1,11 @@
+[
+  {
+    "name": "V0",
+    "edges": [
+      {
+        "to_vertex": "V0",
+        "weight": 7.0
+      }
+    ]
+  }
+]

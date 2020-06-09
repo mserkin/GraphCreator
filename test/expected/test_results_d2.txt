@@ -1,0 +1,5 @@
+ GraphCreator [OPTIONS]
+Applying Dijkstra minimal weight path search...
+Vertices checked: 1, processed: 1
+A path from source to target has not been found.
+

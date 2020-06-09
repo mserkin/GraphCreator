@@ -1,0 +1,6 @@
+ GraphCreator [OPTIONS]
+Applying breadth-first search...
+target not found. 
+Vertices checked: 0, processed: 1
+A path from source to target has not been found.
+

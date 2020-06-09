@@ -1,0 +1,7 @@
+ GraphCreator [OPTIONS]
+Applying Bellman-Ford minimal weight path search...
+V0 weight: 0
+V0->V1 weight: 7
+The path from source to target has been found: 
+	V0; V1; 
+	Shortest path weight: 7

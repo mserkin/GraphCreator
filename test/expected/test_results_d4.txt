@@ -1,0 +1,7 @@
+ GraphCreator [OPTIONS]
+Applying Dijkstra minimal weight path search...
+target found: V1
+Vertices checked: 3, processed: 3
+The path from source to target has been found: 
+	V0; V1; 
+	Shortest path weight: 7
