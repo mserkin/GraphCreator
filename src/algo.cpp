@@ -13,6 +13,7 @@
 #include <stack>
 #include "graph.h"
 #include "algo.h"
+#include "settings.h"
 
 map <AlgoResultCode, string> g_algo_result_text {
 	{Ok, "Ok"}, {Found, "Target found"}, {NotFound, "Target not found"}, {NoSourceOrTarget, "Source or target vertex undefined"}
@@ -366,3 +367,20 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 	}
 	if (callback) callback(AlgorithmFinished, nullptr, user_context);
 };
+
+void clearContext (Algorithm algo, Graph& graph) {
+	for (auto itv = graph.rbegin(); itv != graph.rend(); itv++) {
+		switch (algo) {
+		case Dijkstra:
+		case BellmanFord:
+		case Dijkstra2D:
+			delete static_cast<DijkstraContext*>((*itv)->Context);
+			break;
+		case FastDijkstra:
+			delete static_cast<BidirectionalDijkstraContext*>((*itv)->Context);
+			break;
+		default: break;
+		}
+		(*itv)->Context = nullptr;
+	}
+}

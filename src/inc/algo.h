@@ -167,3 +167,8 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 //Way to get found path is the same as for Dijkstra algorithm
 void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback,  AlgoResult& result, void* user_context = nullptr);
 #endif /* ALGO_H_ */
+
+//Delete all context allocated during algorithm work. Should be called after results of algorithm are no more needed
+//and before next algorithm call on the same graph.
+//Graph& graph - graph
+void clearContext (Graph& graph);
