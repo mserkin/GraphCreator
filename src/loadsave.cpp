@@ -195,7 +195,7 @@ void saveGraph(Graph& graph, const Settings& settings) {
 		rapidjson::Value vert(rapidjson::kObjectType);
 		rapidjson::Value name(rapidjson::kStringType);
 		rapidjson::Value edges(rapidjson::kArrayType);
-		for (auto ite = (*itv)->OutcomingEdges->begin(); ite != (*itv)->OutcomingEdges->end(); ite++)
+		for (auto ite = itv->second->OutcomingEdges->begin(); ite != itv->second->OutcomingEdges->end(); ite++)
 		{
 			rapidjson::Value edge(rapidjson::kObjectType);
 			rapidjson::Value to_vertex(rapidjson::kStringType);
@@ -205,7 +205,7 @@ void saveGraph(Graph& graph, const Settings& settings) {
 			edge.AddMember ("weight", weight, doc.GetAllocator());
 			edges.PushBack(edge, doc.GetAllocator());
 		}
-		name.SetString((*itv)->Name.c_str(), (*itv)->Name.length(), doc.GetAllocator());
+		name.SetString(itv->second->Name.c_str(), itv->second->Name.length(), doc.GetAllocator());
 		vert.AddMember("name", name, doc.GetAllocator());
 		vert.AddMember("edges", edges, doc.GetAllocator());
 		doc.PushBack(vert, doc.GetAllocator());

@@ -37,8 +37,8 @@ struct UserContex {
 
 void printGraph(Graph& graph) {
 	for (auto itv = graph.begin(); itv != graph.end(); itv++) {
-		cout << (*itv)->Name << "->";
-		for (auto ite = (*itv)->OutcomingEdges->begin(); ite != (*itv)->OutcomingEdges->end(); ite++) {
+		cout << (*itv).first << "->";
+		for (auto ite = itv->second->OutcomingEdges->begin(); ite != itv->second->OutcomingEdges->end(); ite++) {
 			cout << (*ite)->ToVertex->Name << "; ";
 		}
 		cout << endl;
@@ -80,7 +80,8 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 
 void printPathsToAllVertices(Vertex* source, Graph& graph) {
 	stack<Vertex*> st;
-	for (auto current_vertex: graph) {
+	for (auto &pair: graph) {
+		Vertex* current_vertex = pair.second;
 		DijkstraContext* context = static_cast<DijkstraContext*>(current_vertex->Context);
 		if (context->Weight == INFINITE_WEIGHT) {
 			cout << current_vertex->Name << ": no path from source to this vertex\n";

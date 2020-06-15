@@ -25,8 +25,9 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<DijkstraVertexComparator>> queue;
 	int x_target = target->X, y_target = target->Y;
 	DijkstraContext *current_context;
-	for (const auto& v : graph) {
+	for (const auto& pair : graph) {
 		current_context = new DijkstraContext();
+		Vertex* v = pair.second;
 		if (v == source) {
 			current_context->Weight = 0;
 		}

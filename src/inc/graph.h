@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include "settings.h"
 
 using namespace std;
@@ -43,7 +44,7 @@ struct Edge {
 		FromVertex(_FromVertex), ToVertex(_ToVertex), Weight(_Weight) {};
 };
 typedef Edge* PEdge;
-typedef vector<Vertex*> Graph;
+typedef map<string, Vertex*> Graph;
 
 //Add edge from one given vertex to another given vertex
 Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, const Settings& settings);
@@ -59,9 +60,6 @@ void removeVertex (Vertex **vertex, Graph &graph);
 
 //find vertex with the given name in the graph
 Vertex* findVertex(const string &name, const Graph &graph);
-
-//find the given vertex in the graph and return its index
-int indexOfVertex(const Vertex *vertex, const Graph &graph);
 
 
 

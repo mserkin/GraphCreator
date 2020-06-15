@@ -123,7 +123,8 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<DijkstraVertexComparator>> queue;
 	DijkstraContext *current_vertex_context;
-	for (const auto& v : graph) {
+	for (const auto& pair : graph) {
+		Vertex *v = pair.second;
 		current_vertex_context = new DijkstraContext();
 		if (v == source) {
 			current_vertex_context->Weight = 0;
@@ -184,7 +185,8 @@ void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback
 	};
 
 	DijkstraContext *current_vertex_context;
-	for (const auto& v : graph) {
+	for (const auto& pair1 : graph) {
+		Vertex *v = pair1.second;
 		current_vertex_context = new DijkstraContext();
 		if (v == source) {
 			current_vertex_context->Weight = 0;
@@ -192,17 +194,19 @@ void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback
 		v->Context = current_vertex_context;
 	}
 
+	//n+1 times as last time is for negative loop check
 	for (std::vector<Vertex*>::size_type i = 0; i <= graph.size(); i++) {
-		for (const auto& v : graph) {
-			current_vertex_context = static_cast<DijkstraContext*>(v->Context);
-			for (const auto &e : *(v->OutcomingEdges)) {
+		for (const auto& pair2 : graph) {
+			Vertex *vertex = pair2.second;
+			current_vertex_context = static_cast<DijkstraContext*>(vertex->Context);
+			for (const auto &e : *(vertex->OutcomingEdges)) {
 				DijkstraContext *neighbor_vertex_context = static_cast<DijkstraContext*>(e->ToVertex->Context);
 				weight_t new_weight = current_vertex_context->Weight + e->Weight;
 				if (neighbor_vertex_context->Weight > new_weight) {
 					neighbor_vertex_context->Weight = new_weight;
-					neighbor_vertex_context->Parent = v;
+					neighbor_vertex_context->Parent = vertex;
 					if (i == graph.size()) {
-						if (callback) callback(NegativeLoopDetected, v, user_context);
+						if (callback) callback(NegativeLoopDetected, vertex, user_context);
 						if (callback) callback(AlgorithmFinished, nullptr, user_context);
 						result.ResultCode = NegativeLoopFound;
 						return;
@@ -244,7 +248,8 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 	BidirectionalDijkstraContext *current_vertex_context;
 	result.ResultCode = NotFound;
 	//initialize all vertices' contexts
-	for (const auto& v : graph) {
+	for (const auto& pair : graph) {
+		Vertex* v = pair.second;
 		current_vertex_context = new BidirectionalDijkstraContext();
 		v->Context = current_vertex_context;
 		if (v == source) {
@@ -369,18 +374,19 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 };
 
 void clearContext (Algorithm algo, Graph& graph) {
-	for (auto itv = graph.rbegin(); itv != graph.rend(); itv++) {
+	for (auto &pair : graph) {
+		Vertex *vertex = pair.second;
 		switch (algo) {
 		case Dijkstra:
 		case BellmanFord:
 		case Dijkstra2D:
-			delete static_cast<DijkstraContext*>((*itv)->Context);
+			delete static_cast<DijkstraContext*>(vertex->Context);
 			break;
 		case FastDijkstra:
-			delete static_cast<BidirectionalDijkstraContext*>((*itv)->Context);
+			delete static_cast<BidirectionalDijkstraContext*>(vertex->Context);
 			break;
 		default: break;
 		}
-		(*itv)->Context = nullptr;
+		vertex->Context = nullptr;
 	}
 }

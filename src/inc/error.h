@@ -8,6 +8,7 @@
 #ifndef INC_ERROR_H_
 #define INC_ERROR_H_
 
+constexpr int NO_ERROR = 0;
 constexpr int FATAL_ERROR_FILE_OPEN_FAILURE = -1;
 constexpr int FATAL_ERROR_NO_MEMORY = -2;
 constexpr int FATAL_ERROR_FILE_READ_FAILURE = -3;

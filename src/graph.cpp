@@ -4,13 +4,12 @@
  *  Created on: 3 џэт. 2020 у.
  *      Author: Serkin
  */
-#include <vector>
 #include "graph.h"
 
 
 Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, const Settings& settings) {
 	if (!from || !to) return nullptr;
-	if (indexOfVertex(from, graph) < 0 || indexOfVertex(to, graph) < 0) return nullptr;
+	if (!findVertex(from->Name, graph) || !findVertex(to->Name, graph)) return nullptr;
 	if (from == to && !settings.SelfLoop)  return nullptr;
 	if (!settings.BiDirectional) {
 		for (auto it = to->OutcomingEdges->begin(); it != to->OutcomingEdges->end(); it++) {
@@ -33,11 +32,11 @@ bool addVertex (Vertex *vertex, Graph &graph, const Settings& settings) {
 		return false;
 	}
 	for (auto ite = vertex->OutcomingEdges->begin(); ite != vertex->OutcomingEdges->end(); ite++) {
-		if (indexOfVertex((*ite)->ToVertex, graph) < 0) return false;
+		if (!findVertex((*ite)->ToVertex->Name, graph)) return false;
 		if ((*ite)->ToVertex == (*ite)->FromVertex && !settings.SelfLoop) return false;
 		if ((*ite)->Weight > settings.MaxEdgeWeight || (*ite)->Weight < settings.MinEdgeWeight) return false;
 	}
-	graph.push_back(vertex);
+	graph[vertex->Name] = vertex;
 	return true;
 }
 
@@ -48,12 +47,13 @@ Vertex* addVertex (const string &name, Graph &graph, const Settings& settings) {
 		return vertex;
 	}
 	else {
+
 		return nullptr;
 	}
 }
 
-void removeVertex (Vertex **vertex, Graph &graph) {
-	PVertex pvertex = (*vertex);
+void removeVertex (Vertex **ppvertex, Graph &graph) {
+	PVertex pvertex = (*ppvertex);
 	PEdge pedge;
 	while (!pvertex->OutcomingEdges->empty()) {
 		//take last
@@ -87,30 +87,16 @@ void removeVertex (Vertex **vertex, Graph &graph) {
 		delete pedge;
 	}
 
-	for (auto it3 = graph.begin(); it3 != graph.end(); it3++) {
-		if (!(*it3)->Name.compare(pvertex->Name)) {
-			graph.erase(it3);
-		}
-	}
-
+	graph.erase(pvertex->Name);
 	delete pvertex;
-	vertex = nullptr;
+	ppvertex = nullptr;
 }
 
 Vertex* findVertex(const string &name, const Graph &graph) {
-	for (auto it = graph.begin(); it != graph.end(); it++) {
-		if (!(*it)->Name.compare(name)) {
-			return (*it);
-		}
+	try {
+	 return graph.at(name);
 	}
-	return nullptr;
-}
-
-int indexOfVertex(const Vertex *vertex, const Graph &graph) {
-	size_t i = 0;
-	for (auto it = graph.begin(); it != graph.end(); it++) {
-		if (*it == vertex) return i;
-		i++;
+	catch (std::out_of_range&) {
+		return nullptr;
 	}
-	return -1;
 }
