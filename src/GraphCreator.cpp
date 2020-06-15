@@ -266,12 +266,7 @@ int main(int argc, char **argv) {
 
 	if (settings.Verbose) printGraph(graph);
 
-	//TEST -delete it
-	Graph& copy = cloneGraph(graph);
-
-//	applyAlgo(graph, settings);
-
-	applyAlgo(copy, settings);
+	applyAlgo(graph, settings);
 
 	if (settings.SaveToFile) {
 		saveGraph(graph, settings);
