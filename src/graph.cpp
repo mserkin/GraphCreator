@@ -6,6 +6,20 @@
  */
 #include "graph.h"
 
+Vertex::Vertex(string _Name): Name(_Name) {
+	IncomingEdges = new EdgeList();
+	OutcomingEdges = new EdgeList();
+};
+
+Vertex::~Vertex() {
+		delete OutcomingEdges;
+		delete IncomingEdges;
+}
+
+Vertex *Vertex::edgelessClone() {
+	Vertex *clone = new Vertex(this->Name);
+	return clone;
+};
 
 Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, const Settings& settings) {
 	if (!from || !to) return nullptr;
@@ -93,10 +107,36 @@ void removeVertex (Vertex **ppvertex, Graph &graph) {
 }
 
 Vertex* findVertex(const string &name, const Graph &graph) {
-	try {
-	 return graph.at(name);
+	auto found = graph.find(name);
+	if (found != graph.end()) {
+		return found->second;
 	}
-	catch (std::out_of_range&) {
+	else {
 		return nullptr;
 	}
+}
+
+Graph& cloneGraph(const Graph &graph) {
+	Graph *clone_graph = new Graph();
+	for (auto& pair : graph) {
+		Vertex *original_vertex = pair.second;
+		Vertex *clone_vertex = findVertex(original_vertex->Name, *clone_graph);
+		if (!clone_vertex) {
+			clone_vertex = original_vertex->edgelessClone();
+			(*clone_graph)[pair.first] = clone_vertex;
+		}
+
+		for (auto original_edge : *original_vertex->OutcomingEdges) {
+			Vertex *original_target_vertex = original_edge->ToVertex;
+			Vertex *clone_target_vertex = findVertex(original_target_vertex->Name, *clone_graph);
+			if (!clone_target_vertex) {
+				clone_target_vertex = original_target_vertex->edgelessClone();
+				(*clone_graph)[original_target_vertex->Name] = clone_target_vertex;
+			}
+			Edge *clone_edge = new Edge(clone_vertex, clone_target_vertex, original_edge->Weight);
+			clone_vertex->OutcomingEdges->push_back(clone_edge);
+			clone_target_vertex->IncomingEdges->push_back(clone_edge);
+		}
+	}
+	return *clone_graph;
 }

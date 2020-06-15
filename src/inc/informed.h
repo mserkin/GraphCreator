@@ -16,6 +16,7 @@ struct Vertex2d : public Vertex {
 	int X;
 	int Y;
 	Vertex2d(string _Name, int _X,  int _Y): Vertex(_Name), X(_X), Y(_Y) {};
+	virtual Vertex2d* edgelessClone() override;
 };
 
 

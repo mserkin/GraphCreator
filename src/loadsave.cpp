@@ -191,21 +191,21 @@ int load2dGraph(Graph& graph, const Settings& settings) {
 void saveGraph(Graph& graph, const Settings& settings) {
 	rapidjson::Document doc;
 	doc.SetArray();
-	for (auto itv = graph.begin(); itv != graph.end(); itv++) {
+	for (auto &pair: graph) {
 		rapidjson::Value vert(rapidjson::kObjectType);
 		rapidjson::Value name(rapidjson::kStringType);
 		rapidjson::Value edges(rapidjson::kArrayType);
-		for (auto ite = itv->second->OutcomingEdges->begin(); ite != itv->second->OutcomingEdges->end(); ite++)
+		for (auto &edge: *pair.second->OutcomingEdges)
 		{
-			rapidjson::Value edge(rapidjson::kObjectType);
-			rapidjson::Value to_vertex(rapidjson::kStringType);
-			to_vertex.SetString((*ite)->ToVertex->Name.c_str(), (*ite)->ToVertex->Name.length(), doc.GetAllocator());
-			rapidjson::Value weight((*ite)->Weight);
-			edge.AddMember ("to_vertex", to_vertex, doc.GetAllocator());
-			edge.AddMember ("weight", weight, doc.GetAllocator());
-			edges.PushBack(edge, doc.GetAllocator());
+			rapidjson::Value edge_value(rapidjson::kObjectType);
+			rapidjson::Value to_vertex_value(rapidjson::kStringType);
+			to_vertex_value.SetString(edge->ToVertex->Name.c_str(), edge->ToVertex->Name.length(), doc.GetAllocator());
+			rapidjson::Value weight_value(edge->Weight);
+			edge_value.AddMember ("to_vertex_value", to_vertex_value, doc.GetAllocator());
+			edge_value.AddMember ("weight_value", weight_value, doc.GetAllocator());
+			edges.PushBack(edge_value, doc.GetAllocator());
 		}
-		name.SetString(itv->second->Name.c_str(), itv->second->Name.length(), doc.GetAllocator());
+		name.SetString(pair.second->Name.c_str(), pair.second->Name.length(), doc.GetAllocator());
 		vert.AddMember("name", name, doc.GetAllocator());
 		vert.AddMember("edges", edges, doc.GetAllocator());
 		doc.PushBack(vert, doc.GetAllocator());

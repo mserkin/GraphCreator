@@ -24,14 +24,10 @@ struct Vertex {
 	EdgeList *OutcomingEdges = nullptr;
 	EdgeList *IncomingEdges = nullptr;
 	void* Context = nullptr;
-	Vertex(string _Name): Name(_Name) {
-		IncomingEdges = new EdgeList();
-		OutcomingEdges = new EdgeList();
-	};
-	virtual ~Vertex() {
-		delete OutcomingEdges;
-		delete IncomingEdges;
-	}
+	Vertex(string _Name);
+	virtual ~Vertex();
+	//makes copy of vertex. Edges and context are not cloned
+	virtual Vertex* edgelessClone();
 };
 
 typedef Vertex* PVertex;
@@ -61,6 +57,11 @@ void removeVertex (Vertex **vertex, Graph &graph);
 //find vertex with the given name in the graph
 Vertex* findVertex(const string &name, const Graph &graph);
 
-
+//makes a clone of the graph
+//vertices and edge are cloned but not a context
+//graph - graph to make clone from
+//returns new graph which is a clone of given
+//Graph is allocated with new expression.
+Graph& cloneGraph(const Graph &graph);
 
 #endif /* INC_GRAPH_H_ */

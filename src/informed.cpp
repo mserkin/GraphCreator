@@ -10,6 +10,10 @@
 #include "informed.h"
 
 
+ Vertex2d* Vertex2d::edgelessClone() {
+	Vertex2d *clone = new Vertex2d(this->Name, this->X, this->Y);
+	return clone;
+};
 
 
 void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context, double coefficient) {

@@ -24,41 +24,44 @@
 
 using namespace std;
 
-const string VERSION = "1.11.0.17";
+const string VERSION = "1.12.0.19";
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;
 	Graph* GraphPtr = nullptr;
 	Vertex* SourceVertex = nullptr;
 	Vertex* TargetVertex = nullptr;
-
+	int Checked = 0;
+	int Processed = 0;
+	int SourceProcessingTimes = 0;
 	UserContex (Settings* settings, Graph* graph, Vertex* source, Vertex* target): SettingsPtr(settings), GraphPtr(graph), SourceVertex(source), TargetVertex(target) {};
 };
 
+static
+
 void printGraph(Graph& graph) {
-	for (auto itv = graph.begin(); itv != graph.end(); itv++) {
-		cout << (*itv).first << "->";
-		for (auto ite = itv->second->OutcomingEdges->begin(); ite != itv->second->OutcomingEdges->end(); ite++) {
-			cout << (*ite)->ToVertex->Name << "; ";
+	for (auto& pair: graph) {
+		cout << pair.first << "->";
+		for (auto& edge: *pair.second->OutcomingEdges) {
+			cout << edge->ToVertex->Name << "; ";
 		}
 		cout << endl;
 	}
 }
 
 void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
-	static int checked = 0, processed = 0, source_processing_times = 0;
 	UserContex* alg_context = static_cast<UserContex*>(user_context);
 	bool verbose = alg_context->SettingsPtr->Verbose;
 	switch(event) {
 	case VertexDiscovered:
-		checked++;
+		alg_context->Checked++;
 		if (verbose) cout << "\t\tvertex discovered: " << vertex->Name << endl;
 		break;
 	case VertexProcessingStarted:
-		processed++;
+		alg_context->Processed++;
 		if (verbose) cout << "\tprocessing started: " << vertex->Name << endl;
 		if (alg_context->SettingsPtr->Algorithm == BellmanFord && vertex == alg_context->SourceVertex) {
-			cout << "Iteration " << ++source_processing_times << " of " << alg_context->GraphPtr->size() + 1 << endl;
+			cout << "Iteration " << ++alg_context->SourceProcessingTimes << " of " << alg_context->GraphPtr->size() + 1 << endl;
 		}
 		break;
 	case VertexProcessingFinished:
@@ -71,7 +74,10 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 		cout << "target not found. " << endl;
 		break;
 	case AlgorithmFinished:
-		if (alg_context->SettingsPtr->Algorithm != BellmanFord) cout << "Vertices checked: " << checked << ", processed: " << processed << endl;
+		if (alg_context->SettingsPtr->Algorithm != BellmanFord) {
+			cout << "Vertices checked: " << alg_context->Checked << ", processed: "
+					<< alg_context->Processed << endl;
+		}
 		break;
 	case NegativeLoopDetected:
 		cout << "Negative loop detected at " << vertex->Name << endl;
@@ -260,7 +266,12 @@ int main(int argc, char **argv) {
 
 	if (settings.Verbose) printGraph(graph);
 
-	applyAlgo(graph, settings);
+	//TEST -delete it
+	Graph& copy = cloneGraph(graph);
+
+//	applyAlgo(graph, settings);
+
+	applyAlgo(copy, settings);
 
 	if (settings.SaveToFile) {
 		saveGraph(graph, settings);
