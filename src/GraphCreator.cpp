@@ -3,7 +3,7 @@
 // Author      : Mikhail Serkin
 // Version     :
 // Copyright   : Released under MIT license
-// Description : Hello World in C++, Ansi-style
+// Description : Graph search algorithms
 //============================================================================
 
 
@@ -24,7 +24,7 @@
 
 using namespace std;
 
-const string VERSION = "1.13.0.20";
+const string VERSION = "1.14.0.21";
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;
@@ -60,7 +60,7 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 	case VertexProcessingStarted:
 		alg_context->Processed++;
 		if (verbose) cout << "\tprocessing started: " << vertex->Name << endl;
-		if (alg_context->SettingsPtr->Algorithm == BellmanFord && vertex == alg_context->SourceVertex) {
+		if (alg_context->SettingsPtr->SearchAlgorithm == BellmanFord && vertex == alg_context->SourceVertex) {
 			cout << "Iteration " << ++alg_context->SourceProcessingTimes << " of " << alg_context->GraphPtr->size() + 1 << endl;
 		}
 		break;
@@ -74,7 +74,7 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 		cout << "target not found. " << endl;
 		break;
 	case AlgorithmFinished:
-		if (alg_context->SettingsPtr->Algorithm != BellmanFord) {
+		if (alg_context->SettingsPtr->SearchAlgorithm != BellmanFord) {
 			cout << "Vertices checked: " << alg_context->Checked << ", processed: "
 					<< alg_context->Processed << endl;
 		}
@@ -108,14 +108,14 @@ void printPathsToAllVertices(Vertex* source, Graph& graph) {
 }
 
 void applyAlgo(Graph& graph, Settings &settings) {
-	if (settings.Algorithm == None) return;
+	if (settings.SearchAlgorithm == None) return;
 	Vertex *source = findVertex(settings.SourceVertex, graph);
 	Vertex *target = findVertex(settings.TargetVertex, graph);
 	UserContex user_context(&settings, &graph, source, target);
 	AlgoResult result;
 	BidirectionalDijkstraResult fast_dijkstra_result;
 
-	switch (settings.Algorithm) {
+	switch (settings.SearchAlgorithm) {
 	case BreadthFirstSearch: {
 		cout << "Applying breadth-first search..." << endl;
 		bfs(source, target, handleAlgorithmEvent, result, &user_context);
@@ -169,11 +169,11 @@ void applyAlgo(Graph& graph, Settings &settings) {
 		cout << "The path from source to target has been found: " << endl;
 
 		Vertex *v = target;
-		if (settings.Algorithm == FastDijkstra) v = fast_dijkstra_result.ForwardSearchLastVertex;
+		if (settings.SearchAlgorithm == FastDijkstra) v = fast_dijkstra_result.ForwardSearchLastVertex;
 		stack<Vertex*> path;
 		path.push(v);
 		while (v != source) {
-			switch(settings.Algorithm) {
+			switch(settings.SearchAlgorithm) {
 			case Dijkstra:
 			case Dijkstra2D:
 			case BellmanFord:
@@ -198,7 +198,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 			path.pop();
 		}
 
-		if (settings.Algorithm == FastDijkstra) {
+		if (settings.SearchAlgorithm == FastDijkstra) {
 			v = fast_dijkstra_result.BackwardSearchLastVertex;
 			cout << v->Name << ";";
 			while (v != target) {
@@ -208,7 +208,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 		}
 
 		cout << "\n\tShortest path weight: ";
-		switch(settings.Algorithm) {
+		switch(settings.SearchAlgorithm) {
 		case Dijkstra:
 		case Dijkstra2D:
 		case BellmanFord:

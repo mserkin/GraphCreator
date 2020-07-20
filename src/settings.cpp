@@ -1,7 +1,7 @@
 /*
  * settings.cpp
  *
- *  Created on: 7 нояб. 2019 г.
+ *  Created on: 7 пїЅпїЅпїЅпїЅ. 2019 пїЅ.
  *      Author: Serkin
  */
 
@@ -97,8 +97,8 @@ void Settings::print () {
 		cout << "\tSave graph to the file."<< "\n";
 	}
 
-	if (this->Algorithm != None) {
-		cout << "\tApply algorithm: " << AlgorithmNames[this->Algorithm] << "\n";
+	if (this->SearchAlgorithm != None) {
+		cout << "\tApply algorithm: " << AlgorithmNames[this->SearchAlgorithm] << "\n";
 
 		if (this->SourceVertex != "") {
 			cout << "\tSource vertex: " << this->SourceVertex << "\n";
@@ -153,7 +153,7 @@ void Settings::parse (int argc, char **argv) {
 					cerr << "Unknown algorithm: " << s << endl;
 					exit(-20);
 				}
-				this->Algorithm = AlgorithmArgs[s];
+				this->SearchAlgorithm = AlgorithmArgs[s];
 				break;
 			}
 			case 'S':
@@ -172,13 +172,13 @@ void Settings::parse (int argc, char **argv) {
 				this->MaxEdgeWeight = atoi(optarg);
 				break;
 
-			case 'h':   /* намеренный проход в следующий case-блок */
+			case 'h':   /* пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ case-пїЅпїЅпїЅпїЅ */
 			case '?':
 				displayUsage();
 				break;
 
 			default:
-				/* сюда на самом деле попасть невозможно. */
+				/* пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ. */
 				break;
 		}
 

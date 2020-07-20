@@ -16,7 +16,7 @@ enum Algorithm {
 };
 
 struct Settings {
-	Algorithm Algorithm = None;
+	Algorithm SearchAlgorithm = None;
 	int VertexCount = 6;
 	int MaxEdgeCount = 8;
 	bool SelfLoop = true;
