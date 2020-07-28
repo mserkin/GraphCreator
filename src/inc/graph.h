@@ -12,35 +12,9 @@
 #include <vector>
 #include <map>
 #include "settings.h"
+#include "types.h"
 
 using namespace std;
-
-struct Edge;
-
-typedef vector<Edge*> EdgeList;
-
-struct Vertex {
-	string Name;
-	EdgeList *OutcomingEdges = nullptr;
-	EdgeList *IncomingEdges = nullptr;
-	void* Context = nullptr;
-	Vertex(string _Name);
-	virtual ~Vertex();
-	//makes copy of vertex. Edges and context are not cloned
-	virtual Vertex* edgelessClone();
-};
-
-typedef Vertex* PVertex;
-
-struct Edge {
-	Vertex *FromVertex;
-	Vertex *ToVertex;
-	double Weight;
-	Edge(Vertex* _FromVertex, Vertex* _ToVertex, double _Weight):
-		FromVertex(_FromVertex), ToVertex(_ToVertex), Weight(_Weight) {};
-};
-typedef Edge* PEdge;
-typedef map<string, Vertex*> Graph;
 
 //Add edge from one given vertex to another given vertex
 Edge* addEdge (Vertex *from, Vertex *to, const double weight, Graph &graph, const Settings& settings);

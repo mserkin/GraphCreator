@@ -53,33 +53,33 @@ void handleAlgorithmEvent(AlgoEvent event, Vertex* vertex, void* user_context){
 	UserContex* alg_context = static_cast<UserContex*>(user_context);
 	bool verbose = alg_context->SettingsPtr->Verbose;
 	switch(event) {
-	case VertexDiscovered:
+	case AlgoEvent::VertexDiscovered:
 		alg_context->Checked++;
 		if (verbose) cout << "\t\tvertex discovered: " << vertex->Name << endl;
 		break;
-	case VertexProcessingStarted:
+	case AlgoEvent::VertexProcessingStarted:
 		alg_context->Processed++;
 		if (verbose) cout << "\tprocessing started: " << vertex->Name << endl;
-		if (alg_context->SettingsPtr->SearchAlgorithm == BellmanFord && vertex == alg_context->SourceVertex) {
+		if (alg_context->SettingsPtr->SearchAlgorithm == Algorithm::BellmanFord && vertex == alg_context->SourceVertex) {
 			cout << "Iteration " << ++alg_context->SourceProcessingTimes << " of " << alg_context->GraphPtr->size() + 1 << endl;
 		}
 		break;
-	case VertexProcessingFinished:
+	case AlgoEvent::VertexProcessingFinished:
 		if (verbose) cout << "\tprocessing finished: " << vertex->Name << endl;
 		break;
-	case TargetFound:
+	case AlgoEvent::TargetFound:
 		cout << "target found: " << vertex->Name << endl;
 		break;
-	case TargetNotFound:
+	case AlgoEvent::TargetNotFound:
 		cout << "target not found. " << endl;
 		break;
-	case AlgorithmFinished:
-		if (alg_context->SettingsPtr->SearchAlgorithm != BellmanFord) {
+	case AlgoEvent::AlgorithmFinished:
+		if (alg_context->SettingsPtr->SearchAlgorithm != Algorithm::BellmanFord) {
 			cout << "Vertices checked: " << alg_context->Checked << ", processed: "
 					<< alg_context->Processed << endl;
 		}
 		break;
-	case NegativeLoopDetected:
+	case AlgoEvent::NegativeLoopDetected:
 		cout << "Negative loop detected at " << vertex->Name << endl;
 	}
 }
@@ -108,7 +108,7 @@ void printPathsToAllVertices(Vertex* source, Graph& graph) {
 }
 
 void applyAlgo(Graph& graph, Settings &settings) {
-	if (settings.SearchAlgorithm == None) return;
+	if (settings.SearchAlgorithm == Algorithm::None) return;
 	Vertex *source = findVertex(settings.SourceVertex, graph);
 	Vertex *target = findVertex(settings.TargetVertex, graph);
 	UserContex user_context(&settings, &graph, source, target);
@@ -116,35 +116,35 @@ void applyAlgo(Graph& graph, Settings &settings) {
 	BidirectionalDijkstraResult fast_dijkstra_result;
 
 	switch (settings.SearchAlgorithm) {
-	case BreadthFirstSearch: {
+	case Algorithm::BreadthFirstSearch: {
 		cout << "Applying breadth-first search..." << endl;
 		bfs(source, target, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
-	case DepthFirstSearch: {
+	case Algorithm::DepthFirstSearch: {
 		cout << "Applying depth-first search..." << endl;
 		dfs(source, target, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
-	case Dijkstra: {
+	case Algorithm::Dijkstra: {
 		cout << "Applying Dijkstra minimal weight path search..." << endl;
 		dijkstra(source, target, graph, handleAlgorithmEvent, result, &user_context);
 		break;
 	}
-	case BellmanFord: {
+	case Algorithm::BellmanFord: {
 		cout << "Applying Bellman-Ford minimal weight path search..." << endl;
 		bellmanFord(source, target, graph, handleAlgorithmEvent, result, &user_context);
-		if (result.ResultCode == Found || result.ResultCode == NotFound) {
+		if (result.ResultCode == AlgoResultCode::Found || result.ResultCode == AlgoResultCode::NotFound) {
 			printPathsToAllVertices(source, graph);
 		}
 		break;
 	}
-	case FastDijkstra:
+	case Algorithm::FastDijkstra:
 		cout << "Applying Bidirectional Dijkstra minimal weight path search..." << endl;
 		bidirectionalDijkstra(source, target, graph, handleAlgorithmEvent, fast_dijkstra_result, &user_context);
 		result = fast_dijkstra_result;
 		break;
-	case Dijkstra2D: {
+	case Algorithm::Dijkstra2D: {
 		cout << "Applying Dijkstra2D minimal weight path search..." << endl;
 		dijkstra2d(static_cast<Vertex2d*>(source), static_cast<Vertex2d*>(target), graph, handleAlgorithmEvent, result, &user_context);
 		break;
@@ -153,37 +153,39 @@ void applyAlgo(Graph& graph, Settings &settings) {
 	}
 
 	switch (result.ResultCode) {
-	case NoSourceOrTarget:
+	case AlgoResultCode::NoSourceOrTarget:
 		cout << "\tSource or target vertices are not defined." << endl;
 		break;
-	case SourceIsTarget:
+	case AlgoResultCode::SourceIsTarget:
 		cout << "\tSource and target are the same vertex." << endl;
 		break;
-	case NotFound:
+	case AlgoResultCode::NotFound:
 		cout << "A path from source to target has not been found." << endl;
 		break;
-	case NegativeLoopFound:
+	case AlgoResultCode::NegativeLoopFound:
 		cout << "Negative loop was detected and algorithm execution stopped." << endl;
 		break;
-	case Found: {
+	case AlgoResultCode::Found: {
 		cout << "The path from source to target has been found: " << endl;
 
 		Vertex *v = target;
-		if (settings.SearchAlgorithm == FastDijkstra) v = fast_dijkstra_result.ForwardSearchLastVertex;
+		if (settings.SearchAlgorithm == Algorithm::FastDijkstra) {
+			v = fast_dijkstra_result.ForwardSearchLastVertex;
+		}
 		stack<Vertex*> path;
 		path.push(v);
 		while (v != source) {
 			switch(settings.SearchAlgorithm) {
-			case Dijkstra:
-			case Dijkstra2D:
-			case BellmanFord:
+			case Algorithm::Dijkstra:
+			case Algorithm::Dijkstra2D:
+			case Algorithm::BellmanFord:
 				v = static_cast<DijkstraContext*>(v->Context)->Parent;
 				break;
-			case BreadthFirstSearch:
-			case DepthFirstSearch:
+			case Algorithm::BreadthFirstSearch:
+			case Algorithm::DepthFirstSearch:
 				v = static_cast<Vertex*>(v->Context);
 				break;
-			case FastDijkstra:
+			case Algorithm::FastDijkstra:
 				v = static_cast<BidirectionalDijkstraContext*>(v->Context)->ParentInForwardSearch;
 				break;
 			default:
@@ -198,7 +200,7 @@ void applyAlgo(Graph& graph, Settings &settings) {
 			path.pop();
 		}
 
-		if (settings.SearchAlgorithm == FastDijkstra) {
+		if (settings.SearchAlgorithm == Algorithm::FastDijkstra) {
 			v = fast_dijkstra_result.BackwardSearchLastVertex;
 			cout << v->Name << ";";
 			while (v != target) {
@@ -209,16 +211,16 @@ void applyAlgo(Graph& graph, Settings &settings) {
 
 		cout << "\n\tShortest path weight: ";
 		switch(settings.SearchAlgorithm) {
-		case Dijkstra:
-		case Dijkstra2D:
-		case BellmanFord:
+		case Algorithm::Dijkstra:
+		case Algorithm::BellmanFord:
 			cout << static_cast<DijkstraContext*>(target->Context)->Weight;
 			break;
-		case BreadthFirstSearch:
-		case DepthFirstSearch:
+		case Algorithm::Dijkstra2D:
+		case Algorithm::BreadthFirstSearch:
+		case Algorithm::DepthFirstSearch:
 			cout << "unknown (used algorithm is not capable to detect path of lowest weight)\n";
 			break;
-		case FastDijkstra:
+		case Algorithm::FastDijkstra:
 			cout << static_cast<BidirectionalDijkstraContext*>(fast_dijkstra_result.ForwardSearchLastVertex->Context)->WeightInForwardSearch +
 				static_cast<BidirectionalDijkstraContext*>(fast_dijkstra_result.BackwardSearchLastVertex->Context)->WeightInBackwardSearch +
 				fast_dijkstra_result.ConnectingEdgeWeight << "\n";
@@ -232,12 +234,50 @@ void applyAlgo(Graph& graph, Settings &settings) {
 	}
 }
 
+void printError(int err) {
+	switch (err) {
+	case FATAL_ERROR_FILE_OPEN_FAILURE:
+		cerr << "Cannot load graph from file.\n";
+		break;
+	case FATAL_ERROR_NO_MEMORY:
+		cerr << "Memory allocation error.\n";
+		break;
+	case FATAL_ERROR_FILE_READ_FAILURE:
+		cerr << "Failed to read file. Possible reason: the root element is not array.\n";
+		break;
+	case FATAL_ERROR_NAME_ELEMENT_NOT_FOUND:
+		cerr << "Invalid file format. \"name\" element is expected in object, but not found\n";
+		break;
+	case FATAL_ERROR_FAILED_TO_ADD_VERTEX:
+		cerr << "Failed to add vertex.\n";
+		break;
+	case FATAL_ERROR_FROM_VERTEX_NOT_FOUND:
+		cerr << "Edge to unknown vertex found.\n";
+		break;
+	case FATAL_ERROR_TO_VERTEX_NOT_FOUND:
+		cerr << "Edge from unknown vertex found.\n";
+		break;
+	case FATAL_ERROR_FAILED_TO_ADD_EDGE:
+		cerr << "Cannot add edge.\n";
+		break;
+	case FATAL_ERROR_2D_FILE_CONTAINS_SHORT_LINE:
+		cerr << "Error: not enough characters in line or illegal character found\n";
+		break;
+	default:
+		cerr << "Unknown error\n";
+		break;
+	}
+}
+
 int main(int argc, char **argv) {
 	srand(997);   //time(0));
 
 	Settings settings;
 
-	settings.parse(argc, argv);
+	int error;
+	if (NO_ERROR != (error = settings.parse(argc, argv))) {
+		exit(error);
+	}
 
 	Graph graph;
 
@@ -249,11 +289,17 @@ int main(int argc, char **argv) {
 			int err = load2dGraph(graph, settings);
 			if (err < 0) {
 				cout << "Error: Failed loading 2d graph\n";
+				printError(err);
 				exit(err);
 			}
 		}
 		else if (settings.FilePath.rfind(".json") != string::npos) {
-			loadGraph(graph, settings);
+			int err = loadGraph(graph, settings);
+			if (err != NO_ERROR) {
+				cerr << "Error: Failed loading graph\n";
+				printError(err);
+				exit(err);
+			}
 		}
 		else {
 			cout << "Error: Unknown file type!\n";

@@ -18,12 +18,12 @@
 
 void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context, double coefficient) {
 	if (!source || !target) {
-		result.ResultCode = NoSourceOrTarget;
+		result.ResultCode = AlgoResultCode::NoSourceOrTarget;
 		return;
 	};
 
 	if (source == target) {
-		result.ResultCode = SourceIsTarget;
+		result.ResultCode = AlgoResultCode::SourceIsTarget;
 		return;
 	};
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<DijkstraVertexComparator>> queue;
@@ -36,7 +36,7 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 			current_context->Weight = 0;
 		}
 		v->Context = current_context;
-		static_cast<DijkstraContext*>(v->Context)->Handle = queue.push(v);
+		current_context->Handle = queue.push(v);
 	}
 
 	while (!queue.empty()) {
@@ -44,12 +44,12 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 		queue.pop();
 		weight_t current_coef = abs(v_current->X - x_target) + abs(v_current->Y - y_target);
 		current_context = static_cast<DijkstraContext*>(v_current->Context);
-		if (callback) callback(VertexProcessingStarted, v_current, user_context);
+		if (callback) callback(AlgoEvent::VertexProcessingStarted, v_current, user_context);
 		for (const auto &e : *(v_current->OutcomingEdges)) {
 			Vertex2d *v_to = static_cast<Vertex2d*>(e->ToVertex);
 			DijkstraContext *v_to_context = static_cast<DijkstraContext*>(v_to->Context);
 			if (v_to_context->Processed) continue;
-			if (callback) callback(VertexDiscovered, v_to, user_context);
+			if (callback) callback(AlgoEvent::VertexDiscovered, v_to, user_context);
 			weight_t to_coef = abs(v_to->X - x_target) + abs(v_to->Y - y_target);
 			weight_t to_weight_to_be = current_context->Weight + e->Weight + (to_coef - current_coef)*coefficient;
 			if (v_to_context->Weight > to_weight_to_be) {
@@ -60,18 +60,18 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 			}
 		}
 		current_context->Processed = true;
-		if (callback) callback(VertexProcessingFinished, v_current, user_context);
+		if (callback) callback(AlgoEvent::VertexProcessingFinished, v_current, user_context);
 
 		if (v_current == target) {
-			if (callback) callback(TargetFound, v_current, user_context);
-			result.ResultCode = Found;
-			if (callback) callback(AlgorithmFinished, nullptr, user_context);
+			if (callback) callback(AlgoEvent::TargetFound, v_current, user_context);
+			result.ResultCode = AlgoResultCode::Found;
+			if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
 			return;
 		}
 	};
 
-	if (callback) callback(AlgorithmFinished, nullptr, user_context);
-	result.ResultCode = NotFound;
+	if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+	result.ResultCode = AlgoResultCode::NotFound;
 }
 
 

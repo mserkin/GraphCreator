@@ -8,6 +8,7 @@
 #include <iostream>
 #include "graph.h"
 #include "settings.h"
+#include "informed.h"
 #include "error.h"
 
 Vertex* chooseToVertex(Vertex *vertex_from, const Settings &settings, Graph &graph,
@@ -41,10 +42,10 @@ Vertex* chooseToVertex(Vertex *vertex_from, const Settings &settings, Graph &gra
 	return vertex_to;
 }
 
-
-void createGraph(Graph& graph, const Settings& settings) {
+int createNonpositionalGraph(Graph& graph, const Settings& settings) {
 	int error_count = 0;
 	int last_error = 0;
+
 	int total_edge_num = settings.MaxEdgeCount;
 	for (int i = 0; i < settings.VertexCount; i++) {
 		char *name = new char[4]; name[0] = 'V';
@@ -95,5 +96,29 @@ void createGraph(Graph& graph, const Settings& settings) {
 		}
 	}
 	cout << "Error count: " << error_count << "\nLast error: " << last_error << endl;
+	return NO_ERROR;
 }
 
+int create2dGraph(Graph& graph, const Settings& settings) {
+	Vertex* (*v2d)[9] = new Vertex* [9][9];
+	for (unsigned char y1 = 0; y1 < 9; y1++) {
+		for (unsigned char x1 = 0; x1 < 9; x1++) {
+			string name {"0:0"};
+			name[0] = 0x30 + x1;
+			name[2] = 0x30 + y1;
+			Vertex *vertex = new Vertex2d(name, x1, y1);
+			if (!addVertex(vertex, graph, settings)) return FATAL_ERROR_FAILED_TO_ADD_VERTEX;
+			v2d[y1][x1] = vertex;
+		}
+	}
+	return NO_ERROR;
+}
+
+int createGraph(Graph& graph, const Settings& settings) {
+	if (settings.TypeOfGraph == GraphType::Graph2D) {
+		return create2dGraph(graph, settings);
+	}
+	else {
+		return createNonpositionalGraph(graph, settings);
+	}
+}

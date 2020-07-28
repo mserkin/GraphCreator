@@ -6,6 +6,7 @@
  */
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
@@ -16,14 +17,13 @@
 #include "settings.h"
 #include "informed.h"
 
-void loadGraph(Graph& graph, const Settings& settings) {
+int loadGraph(Graph& graph, const Settings& settings) {
 	using namespace std;
 
 	FILE * fd = fopen(settings.FilePath.c_str(), "rb");
 
 	if (!fd){
-		cerr << "Cannot load graph from file: " << settings.FilePath;
-		exit(FATAL_ERROR_FILE_OPEN_FAILURE);
+		return FATAL_ERROR_FILE_OPEN_FAILURE;
 	}
 
 	fseek(fd, 0, SEEK_END);                          // устанавливаем позицию в конец файла
@@ -33,8 +33,8 @@ void loadGraph(Graph& graph, const Settings& settings) {
 	char * buffer = (char*) malloc(sizeof(char) * lSize + 1); // выделить память для хранения содержимого файла
 	if (buffer == NULL)
 	{
-	  fputs("Memory allocation error.", stderr);
-	  exit(FATAL_ERROR_NO_MEMORY);
+		fclose(fd);
+	    return FATAL_ERROR_NO_MEMORY;
 	}
 
 	char *begin = buffer;
@@ -47,38 +47,37 @@ void loadGraph(Graph& graph, const Settings& settings) {
 
 	if (begin - buffer != lSize)
 	{
-	  fputs("Failed to read file", stderr);
-		exit(FATAL_ERROR_FILE_READ_FAILURE);
+		free (buffer);
+		fclose (fd);
+		return FATAL_ERROR_FILE_READ_FAILURE;
 	}
 
 	buffer[lSize] = 0;
 
-	//содержимое файла теперь находится в буфере
 	if (settings.Verbose) puts(buffer);
 
-	// завершение работы
 	fclose (fd);
 
 	rapidjson::Document doc;
 	doc.ParseInsitu(buffer);
 	if (!doc.IsArray()) {
-		fputs("Invalid file format. The root element is expected to be array.", stderr);
-		exit(FATAL_ERROR_FILE_READ_FAILURE);
+		free (buffer);
+		return FATAL_ERROR_FILE_READ_FAILURE;
 	}
 
 	//creating all vertices
 	for (rapidjson::Value::ConstValueIterator itr = doc.Begin(); itr != doc.End(); ++itr) {
 	    auto vertex_obj1 = itr->GetObject();
 		if (!vertex_obj1.HasMember("name")) {
-			fputs("Invalid file format. \"name\" element is expected in object, but not found", stderr);
-			exit(FATAL_ERROR_NAME_ELEMENT_NOT_FOUND);
+			free (buffer);
+			return FATAL_ERROR_NAME_ELEMENT_NOT_FOUND;
 		}
 		string *str1 = new string (vertex_obj1["name"].GetString());
 
 		Vertex *vertex = addVertex(*str1, graph, settings);
 		if (vertex == nullptr) {
-			cerr << "Failed to add vertex.";
-			exit(FATAL_ERROR_FAILED_TO_ADD_VERTEX);
+			free (buffer);
+			return FATAL_ERROR_FAILED_TO_ADD_VERTEX;
 		}
 	}
 
@@ -89,8 +88,8 @@ void loadGraph(Graph& graph, const Settings& settings) {
 	    Vertex* from_vertex = findVertex(*str_from, graph);
 
 	    if (!from_vertex) {
-	    	cerr << "Vertex not found: " << *str_from;
-			exit(FATAL_ERROR_FROM_VERTEX_NOT_FOUND);
+	    	free (buffer);
+			return FATAL_ERROR_FROM_VERTEX_NOT_FOUND;
 	    }
 
 	    if (vertex_obj2.HasMember("edges")) {
@@ -100,90 +99,92 @@ void loadGraph(Graph& graph, const Settings& settings) {
 				string *str_to = new string(edge_obj["to_vertex"].GetString());
 				Vertex* to_vertex = findVertex(*str_to, graph);
 			    if (!to_vertex) {
-			    	cerr << "Vertex not found: " << *str_to;
-					exit(FATAL_ERROR_TO_VERTEX_NOT_FOUND);
+			    	free (buffer);
+			    	return FATAL_ERROR_TO_VERTEX_NOT_FOUND;
 			    }
 				double weight = edge_obj["weight"].GetDouble();
 				if (!addEdge(from_vertex, to_vertex, weight, graph, settings)) {
-					cerr << "Cannot add edge: " << *str_from << "->" << *str_to << endl;
-					exit(FATAL_ERROR_FAILED_TO_ADD_EDGE);
+					free (buffer);
+					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
 				}
 			}
 		}
 	}
 	free (buffer);
+	return NO_ERROR;
 }
 
 int load2dGraph(Graph& graph, const Settings& settings) {
-	Vertex *v2d[9][9];
-	for (unsigned char y1 = 0; y1 < 9; y1++) {
-		for (unsigned char x1 = 0; x1 < 9; x1++) {
-			string name {"0:0"};
-			name[0] = 0x30 + x1;
-			name[2] = 0x30 + y1;
-			Vertex *vertex = new Vertex2d(name, x1, y1);
+	unsigned long long width = 0, height = 0;
+
+	ifstream file(settings.FilePath.c_str());
+	if (file.fail()) {
+		return FATAL_ERROR_FILE_OPEN_FAILURE;
+	}
+	string line;
+	while(std::getline(file, line)){
+		if (width < line.length()) width = line.length();
+		height++;
+	}
+	file.clear();
+	file.seekg(ios_base::beg);
+
+
+	vector<vector<Vertex*>*> v2d;
+	for (unsigned long long y1 = 0; y1 < height; y1++) {
+		vector<Vertex*>* vector_line = new vector<Vertex*>;
+		v2d.push_back(vector_line);
+		for (unsigned long long x1 = 0; x1 < width; x1++) {
+			std::ostringstream ss_name;
+			ss_name << x1 << ":" << y1;
+			Vertex *vertex = new Vertex2d(ss_name.str(), x1, y1);
 			if (!addVertex(vertex, graph, settings)) return FATAL_ERROR_FAILED_TO_ADD_VERTEX;
-			v2d[y1][x1] = vertex;
+			vector_line->push_back(vertex);
 		}
 	}
-	for (int y2 = 0; y2 < 9; y2++) {
-		for (int x2 = 0; x2 < 9; x2++) {
+	for (unsigned long long y2 = 0; y2 < height; y2++) {
+		for (unsigned long long x2 = 0; x2 < width; x2++) {
 			if (y2 > 0) {
-				if (!addEdge(v2d[y2][x2], v2d[y2-1][x2], 1, graph, settings)){
+				if (!addEdge((*v2d[y2])[x2], (*v2d[y2-1])[x2], 1, graph, settings)){
 					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
 				}
 			}
-			if (y2 < 8) {
-				if (!addEdge(v2d[y2][x2], v2d[y2+1][x2], 1, graph, settings)) {
+			if (y2 < height - 1) {
+				if (!addEdge((*v2d[y2])[x2], (*v2d[y2+1])[x2], 1, graph, settings)) {
 					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
 				}
 			}
 			if (x2 > 0) {
-				if(!addEdge(v2d[y2][x2], v2d[y2][x2-1], 1, graph, settings)) {
+				if(!addEdge((*v2d[y2])[x2], (*v2d[y2])[x2-1], 1, graph, settings)) {
 					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
 				}
 			}
-			if (x2 < 8) {
-				if (!addEdge(v2d[y2][x2], v2d[y2][x2+1], 1, graph, settings)) {
+			if (x2 < width - 1) {
+				if (!addEdge((*v2d[y2])[x2], (*v2d[y2])[x2+1], 1, graph, settings)) {
 					return FATAL_ERROR_FAILED_TO_ADD_EDGE;
 				}
 			}
 		}
 	}
 
-	ifstream file(settings.FilePath.c_str());
-	if (file.fail()) {
-		cout << "Error: failed to open file.\n";
-		return FATAL_ERROR_FILE_OPEN_FAILURE;
-	}
-	string line;
-	int y3 = 0;
-	while(y3 < 9 && std::getline(file, line)){
-		if (line.length() < 9) {
-			cout << "Error: line is shorter than 9 charecters.\n";
-			exit(FATAL_ERROR_2D_FILE_CONTAINS_SHORT_LINE);
-		}
-		for (int x3 = 0; x3 < 9; x3++) {
-			switch (line[x3]) {
+	int y4 = 0;
+	while(std::getline(file, line)) {
+		for (unsigned long long x4 = 0; x4 < line.length(); x4++) {
+			switch (line[x4]) {
 			case '+':
-				removeVertex(&v2d[y3][x3], graph);
+				removeVertex(&(*v2d[y4])[x4], graph);
 				break;
 			case '-':
 				break;
 			case 0x13:
 			case 0x10:
-				cout << "Error: line " << y3 << " is shorter than 9 characters\n";
-				exit(FATAL_ERROR_2D_FILE_CONTAINS_SHORT_LINE);
+				break;
 			default:
-				cout << "Error: line "<< y3 << " contains illegal character " << line[x3] << "(" << int(line[x3]) << ")\n";
-				exit(FATAL_ERROR_2D_FILE_CONTAINS_SHORT_LINE);
+				//cerr << "Error: line "<< y4 << " contains illegal character " << line[x4] << "(" << int(line[x4]) << ")\n";
+				return FATAL_ERROR_2D_FILE_CONTAINS_SHORT_LINE;
 			}
 		}
-		y3++;
-	}
-	if (y3 < 9) {
-		cout << "Error: file is shorter than needed.\n";
-		return FATAL_ERROR_2D_FILE_IS_SHORT;
+		y4++;
 	}
 	return 0;
 }

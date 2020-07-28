@@ -16,7 +16,10 @@
 #include "settings.h"
 
 map <AlgoResultCode, string> g_algo_result_text {
-	{Ok, "Ok"}, {Found, "Target found"}, {NotFound, "Target not found"}, {NoSourceOrTarget, "Source or target vertex undefined"}
+	{AlgoResultCode::Ok, "Ok"},
+	{AlgoResultCode::Found, "Target found"},
+	{AlgoResultCode::NotFound, "Target not found"},
+	{AlgoResultCode::NoSourceOrTarget, "Source or target vertex undefined"}
 };
 
 string AlgoResult::getText() {
@@ -25,12 +28,12 @@ string AlgoResult::getText() {
 
 void bfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, void* user_context) {
 	if (!source || !target) {
-		result.ResultCode = NoSourceOrTarget;
+		result.ResultCode = AlgoResultCode::NoSourceOrTarget;
 		return;
 	};
 
 	if (source == target) {
-		result.ResultCode = SourceIsTarget;
+		result.ResultCode = AlgoResultCode::SourceIsTarget;
 		return;
 	};
 
@@ -41,36 +44,36 @@ void bfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
 	while (!q.empty()) {
 		Vertex *v = q.front();
 		q.pop();
-		if (callback) callback(VertexProcessingStarted, v, user_context);
+		if (callback) callback(AlgoEvent::VertexProcessingStarted, v, user_context);
 		for (const auto &e : *(v->OutcomingEdges)) {
 			if (!e->ToVertex->Context) {
 				e->ToVertex->Context = (void*)v;
 				q.push(e->ToVertex);
-				if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
+				if (callback) callback(AlgoEvent::VertexDiscovered, e->ToVertex, user_context);
 			}
 			if (e->ToVertex == target) {
-				if (callback) callback(TargetFound, e->ToVertex, user_context);
-				if (callback) callback(AlgorithmFinished, nullptr, user_context);
-				result.ResultCode = Found;
+				if (callback) callback(AlgoEvent::TargetFound, e->ToVertex, user_context);
+				if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+				result.ResultCode = AlgoResultCode::Found;
 				return;
 			}
 		}
-		if (callback) callback(VertexProcessingFinished, v, user_context);
+		if (callback) callback(AlgoEvent::VertexProcessingFinished, v, user_context);
 	}
-	if (callback) callback(TargetNotFound, nullptr, user_context);
-	if (callback) callback(AlgorithmFinished, nullptr, user_context);
+	if (callback) callback(AlgoEvent::TargetNotFound, nullptr, user_context);
+	if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
 
-    result.ResultCode = NotFound;
+    result.ResultCode = AlgoResultCode::NotFound;
 }
 
 void dfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, void* user_context) {
 	if (!source || !target) {
-		result.ResultCode = NoSourceOrTarget;
+		result.ResultCode = AlgoResultCode::NoSourceOrTarget;
 		return;
 	};
 
 	if (source == target) {
-		result.ResultCode = SourceIsTarget;
+		result.ResultCode = AlgoResultCode::SourceIsTarget;
 		return;
 	};
 
@@ -81,25 +84,25 @@ void dfs(Vertex *source, Vertex *target, Callback callback, AlgoResult& result, 
 	while (!q.empty()) {
 		Vertex *v = q.top();
 		q.pop();
-		if (callback) callback(VertexProcessingStarted, v, user_context);
+		if (callback) callback(AlgoEvent::VertexProcessingStarted, v, user_context);
 		for (const auto &e : *(v->OutcomingEdges)) {
 			if (!e->ToVertex->Context) {
 				e->ToVertex->Context = (void*)v;
 				q.push(e->ToVertex);
-				if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
+				if (callback) callback(AlgoEvent::VertexDiscovered, e->ToVertex, user_context);
 			}
 			if (e->ToVertex == target) {
-				if (callback) callback(TargetFound, e->ToVertex, user_context);
-				if (callback) callback(AlgorithmFinished, nullptr, user_context);
-				result.ResultCode = Found;
+				if (callback) callback(AlgoEvent::TargetFound, e->ToVertex, user_context);
+				if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+				result.ResultCode = AlgoResultCode::Found;
 				return;
 			}
 		}
-		if (callback) callback(VertexProcessingFinished, v, user_context);
+		if (callback) callback(AlgoEvent::VertexProcessingFinished, v, user_context);
 	}
-	if (callback) callback(TargetNotFound, nullptr, user_context);
-	if (callback) callback(AlgorithmFinished, nullptr, user_context);
-    result.ResultCode = NotFound;
+	if (callback) callback(AlgoEvent::TargetNotFound, nullptr, user_context);
+	if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+    result.ResultCode = AlgoResultCode::NotFound;
 }
 
 bool DijkstraVertexComparator::operator()(const PVertex& v1, const PVertex& v2) const {
@@ -112,12 +115,12 @@ bool DijkstraVertexComparator::operator()(const PVertex& v1, const PVertex& v2) 
 
 void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
 	if (!source || !target) {
-		result.ResultCode = NoSourceOrTarget;
+		result.ResultCode = AlgoResultCode::NoSourceOrTarget;
 		return;
 	};
 
 	if (source == target) {
-		result.ResultCode = SourceIsTarget;
+		result.ResultCode = AlgoResultCode::SourceIsTarget;
 		return;
 	};
 
@@ -144,11 +147,11 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 			break;
 		}
 
-		if (callback) callback(VertexProcessingStarted, v, user_context);
+		if (callback) callback(AlgoEvent::VertexProcessingStarted, v, user_context);
 		for (const auto &e : *(v->OutcomingEdges)) {
 			DijkstraContext *neightbor_vertex_context = static_cast<DijkstraContext*>(e->ToVertex->Context);
 			if (neightbor_vertex_context->Processed) continue;
-			if (callback) callback(VertexDiscovered, e->ToVertex, user_context);
+			if (callback) callback(AlgoEvent::VertexDiscovered, e->ToVertex, user_context);
 
 			weight_t new_weight = current_vertex_context->Weight + e->Weight;
 			if (neightbor_vertex_context->Weight > new_weight) {
@@ -159,28 +162,28 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 			}
 		}
 		static_cast<DijkstraContext*>(v->Context)->Processed = true;
-		if (callback) callback(VertexProcessingFinished, v, user_context);
+		if (callback) callback(AlgoEvent::VertexProcessingFinished, v, user_context);
 
 		if (v == target) {
-			if (callback) callback(TargetFound, v, user_context);
-			result.ResultCode = Found;
-			if (callback) callback(AlgorithmFinished, nullptr, user_context);
+			if (callback) callback(AlgoEvent::TargetFound, v, user_context);
+			result.ResultCode = AlgoResultCode::Found;
+			if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
 			return;
 		}
 	};
 
-	if (callback) callback(AlgorithmFinished, nullptr, user_context);
-	result.ResultCode = NotFound;
+	if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+	result.ResultCode = AlgoResultCode::NotFound;
 }
 
 void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback, AlgoResult& result, void* user_context) {
 	if (!source || !target) {
-		result.ResultCode = NoSourceOrTarget;
+		result.ResultCode = AlgoResultCode::NoSourceOrTarget;
 		return;
 	};
 
 	if (source == target) {
-		result.ResultCode = SourceIsTarget;
+		result.ResultCode = AlgoResultCode::SourceIsTarget;
 		return;
 	};
 
@@ -206,9 +209,11 @@ void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback
 					neighbor_vertex_context->Weight = new_weight;
 					neighbor_vertex_context->Parent = vertex;
 					if (i == graph.size()) {
-						if (callback) callback(NegativeLoopDetected, vertex, user_context);
-						if (callback) callback(AlgorithmFinished, nullptr, user_context);
-						result.ResultCode = NegativeLoopFound;
+						if (callback) callback(AlgoEvent::NegativeLoopDetected,
+								vertex, user_context);
+						if (callback) callback(AlgoEvent::AlgorithmFinished,
+								nullptr, user_context);
+						result.ResultCode = AlgoResultCode::NegativeLoopFound;
 						return;
 					}
 				}
@@ -216,8 +221,10 @@ void bellmanFord(Vertex* source, Vertex* target, Graph& graph, Callback callback
 		}
 	}
 
-	if (callback) callback(AlgorithmFinished, nullptr, user_context);
-	result.ResultCode = (static_cast<DijkstraContext*>(target->Context)->Weight < INFINITE_WEIGHT) ? Found : NotFound;
+	if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+	result.ResultCode = (static_cast<DijkstraContext*>(target->Context)->Weight < INFINITE_WEIGHT) ?
+			AlgoResultCode::Found :
+			AlgoResultCode::NotFound;
 }
 
 bool FastDijkstraForwardComparator::operator()(const PVertex& v1, const PVertex& v2) const {
@@ -234,19 +241,19 @@ bool FastDijkstraBackwardComparator::operator()(const PVertex& v1, const PVertex
 
 void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, BidirectionalDijkstraResult& result, void* user_context) {
 	if (!source || !target) {
-		result.ResultCode = NoSourceOrTarget;
+		result.ResultCode = AlgoResultCode::NoSourceOrTarget;
 		return;
 	};
 
 	if (source == target) {
-		result.ResultCode = SourceIsTarget;
+		result.ResultCode = AlgoResultCode::SourceIsTarget;
 		return;
 	};
 
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<FastDijkstraForwardComparator>> forward_queue;
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<FastDijkstraBackwardComparator>> backward_queue;
 	BidirectionalDijkstraContext *current_vertex_context;
-	result.ResultCode = NotFound;
+	result.ResultCode = AlgoResultCode::NotFound;
 	//initialize all vertices' contexts
 	for (const auto& pair : graph) {
 		Vertex* v = pair.second;
@@ -276,18 +283,18 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 		//If path found and there no candidates to be shortest
 		if (shortest_path_weight < INFINITE_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
 		{
-			if (callback) callback(AlgorithmFinished, nullptr, user_context);
+			if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
 			result.ForwardSearchLastVertex = forward_shortest_path_vertex;
 			result.BackwardSearchLastVertex = backward_shortest_path_vertex;
 			result.ConnectingEdgeWeight = shortest_path_bridge_weight;
-			result.ResultCode = Found;
+			result.ResultCode = AlgoResultCode::Found;
 			return;
 		}
 		
 		//process current vertex in forward search
 		if (!forward_queue.empty()) {
 			current_vertex_context = static_cast<BidirectionalDijkstraContext*>(current_forward_search_vertex->Context);
-			if (callback) callback(VertexProcessingStarted, current_forward_search_vertex, user_context);
+			if (callback) callback(AlgoEvent::VertexProcessingStarted, current_forward_search_vertex, user_context);
 		
 			//process all outgoing edges from current forward search vertex
 			for (const auto &fe : *(current_forward_search_vertex->OutcomingEdges)) {
@@ -295,7 +302,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 				neighbor_context = static_cast<BidirectionalDijkstraContext*>(neighbor->Context);
 				//if this vertex is already processed no need to process it again
 				if (neighbor_context->ProcessedByForwardSearch) continue;
-				if (callback) callback(VertexDiscovered, neighbor, user_context);
+				if (callback) callback(AlgoEvent::VertexDiscovered, neighbor, user_context);
 				
 				//release edge - update neighbor vertex weight and parent
 				if (neighbor_context->WeightInForwardSearch > current_vertex_context->WeightInForwardSearch + fe->Weight) {
@@ -317,25 +324,25 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 				}
 			}
 			current_vertex_context->ProcessedByForwardSearch = true;
-			if (callback) callback(VertexProcessingFinished, current_forward_search_vertex, user_context);
+			if (callback) callback(AlgoEvent::VertexProcessingFinished, current_forward_search_vertex, user_context);
 
 			forward_queue.pop();
 		};
 
 		if (shortest_path_weight < INFINITE_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
 		{
-			if (callback) callback(AlgorithmFinished, nullptr, user_context);
+			if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
 			result.ForwardSearchLastVertex = forward_shortest_path_vertex;
 			result.BackwardSearchLastVertex = backward_shortest_path_vertex;
 			result.ConnectingEdgeWeight = shortest_path_bridge_weight;
-			result.ResultCode = Found;
+			result.ResultCode = AlgoResultCode::Found;
 			return;
 		}
 
 		//process current vertex in forward search
 		if (!backward_queue.empty()) {
 			current_vertex_context = static_cast<BidirectionalDijkstraContext*>(current_backward_search_vertex->Context);
-			if (callback) callback(VertexProcessingStarted, current_backward_search_vertex, user_context);
+			if (callback) callback(AlgoEvent::VertexProcessingStarted, current_backward_search_vertex, user_context);
 		
 			//process all incoming edges to current backward search vertex
 			for (const auto &be : *(current_backward_search_vertex->IncomingEdges)) {
@@ -343,7 +350,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 				neighbor_context = static_cast<BidirectionalDijkstraContext*>(neighbor->Context);
 				//if this vertex is already processed no need to process it again
 				if (neighbor_context->ProcessedByBackwardSearch) continue;
-				if (callback) callback(VertexDiscovered, neighbor, user_context);
+				if (callback) callback(AlgoEvent::VertexDiscovered, neighbor, user_context);
 				
 				//release edge - update neighbor vertex weight and parent
 				if (neighbor_context->WeightInBackwardSearch > current_vertex_context->WeightInBackwardSearch + be->Weight) {
@@ -365,24 +372,24 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 				}
 			}
 			current_vertex_context->ProcessedByBackwardSearch = true;
-			if (callback) callback(VertexProcessingFinished, current_backward_search_vertex, user_context);
+			if (callback) callback(AlgoEvent::VertexProcessingFinished, current_backward_search_vertex, user_context);
 
 			backward_queue.pop();
 		};
 	}
-	if (callback) callback(AlgorithmFinished, nullptr, user_context);
+	if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
 };
 
 void clearContext (Algorithm algo, Graph& graph) {
 	for (auto &pair : graph) {
 		Vertex *vertex = pair.second;
 		switch (algo) {
-		case Dijkstra:
-		case BellmanFord:
-		case Dijkstra2D:
+		case Algorithm::Dijkstra:
+		case Algorithm::BellmanFord:
+		case Algorithm::Dijkstra2D:
 			delete static_cast<DijkstraContext*>(vertex->Context);
 			break;
-		case FastDijkstra:
+		case Algorithm::FastDijkstra:
 			delete static_cast<BidirectionalDijkstraContext*>(vertex->Context);
 			break;
 		default: break;
