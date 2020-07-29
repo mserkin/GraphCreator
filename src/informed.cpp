@@ -44,6 +44,12 @@ void dijkstra2d(Vertex2d* source, Vertex2d* target, Graph& graph, Callback callb
 		queue.pop();
 		weight_t current_coef = abs(v_current->X - x_target) + abs(v_current->Y - y_target);
 		current_context = static_cast<DijkstraContext*>(v_current->Context);
+		//Dead end
+		if (current_context->Weight == INFINITE_WEIGHT) {
+			if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+			result.ResultCode = AlgoResultCode::NotFound;
+			return;
+		}
 		if (callback) callback(AlgoEvent::VertexProcessingStarted, v_current, user_context);
 		for (const auto &e : *(v_current->OutcomingEdges)) {
 			Vertex2d *v_to = static_cast<Vertex2d*>(e->ToVertex);

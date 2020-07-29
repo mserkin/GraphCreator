@@ -142,7 +142,7 @@ void dijkstra(Vertex* source, Vertex* target, Graph& graph, Callback callback, A
 		queue.pop();
 		current_vertex_context = static_cast<DijkstraContext*>(v->Context);
 
-		//Unreachable vertex was taken! Thus there is no more unprocessed vertices that can be reached from source
+		//Dead end
 		if(current_vertex_context->Weight == INFINITE_WEIGHT) {
 			break;
 		}
@@ -252,34 +252,44 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<FastDijkstraForwardComparator>> forward_queue;
 	boost::heap::binomial_heap<PVertex, boost::heap::compare<FastDijkstraBackwardComparator>> backward_queue;
-	BidirectionalDijkstraContext *current_vertex_context;
+	BidirectionalDijkstraContext *init_context;
 	result.ResultCode = AlgoResultCode::NotFound;
 	//initialize all vertices' contexts
 	for (const auto& pair : graph) {
 		Vertex* v = pair.second;
-		current_vertex_context = new BidirectionalDijkstraContext();
-		v->Context = current_vertex_context;
+		init_context = new BidirectionalDijkstraContext();
+		v->Context = init_context;
 		if (v == source) {
-			current_vertex_context->WeightInForwardSearch = 0;
+			init_context->WeightInForwardSearch = 0;
 		}
 		if (v == target) {
-			current_vertex_context->WeightInBackwardSearch = 0;
+			init_context->WeightInBackwardSearch = 0;
 		}
-		current_vertex_context->HandleInForwardSearch = forward_queue.push(v);
-		current_vertex_context->HandleInBackwardSearch = backward_queue.push(v);
+		init_context->HandleInForwardSearch = forward_queue.push(v);
+		init_context->HandleInBackwardSearch = backward_queue.push(v);
 	}
 	
 	weight_t shortest_path_weight = INFINITE_WEIGHT, new_path_weight;
 	Vertex *current_forward_search_vertex, *current_backward_search_vertex, *neighbor;
 	Vertex *forward_shortest_path_vertex = nullptr, *backward_shortest_path_vertex = nullptr;
-	BidirectionalDijkstraContext *neighbor_context;
+	BidirectionalDijkstraContext *neighbor_context, *forward_search_current_context, *backward_search_current_context;;
 	weight_t shortest_path_bridge_weight = INFINITE_WEIGHT;
+
 	while (!forward_queue.empty() && !backward_queue.empty()) {
 		current_forward_search_vertex = forward_queue.top();
 		current_backward_search_vertex = backward_queue.top();
+		forward_search_current_context = static_cast<BidirectionalDijkstraContext*>(current_forward_search_vertex->Context);
+		backward_search_current_context = static_cast<BidirectionalDijkstraContext*>(current_backward_search_vertex->Context);
+
+		//Dead end check
+		if (forward_search_current_context->WeightInForwardSearch == INFINITE_WEIGHT) {
+			if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+			result.ResultCode = AlgoResultCode::NotFound;
+			return;
+		}
 		
-		double best_forward_search = static_cast<BidirectionalDijkstraContext*>(forward_queue.top()->Context)->WeightInForwardSearch;
-		double best_backward_search = static_cast<BidirectionalDijkstraContext*>(backward_queue.top()->Context)->WeightInBackwardSearch;
+		double best_forward_search = forward_search_current_context->WeightInForwardSearch;
+		double best_backward_search = backward_search_current_context->WeightInBackwardSearch;
 		//If path found and there no candidates to be shortest
 		if (shortest_path_weight < INFINITE_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
 		{
@@ -293,7 +303,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 		
 		//process current vertex in forward search
 		if (!forward_queue.empty()) {
-			current_vertex_context = static_cast<BidirectionalDijkstraContext*>(current_forward_search_vertex->Context);
+			forward_search_current_context = static_cast<BidirectionalDijkstraContext*>(current_forward_search_vertex->Context);
 			if (callback) callback(AlgoEvent::VertexProcessingStarted, current_forward_search_vertex, user_context);
 		
 			//process all outgoing edges from current forward search vertex
@@ -305,8 +315,8 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 				if (callback) callback(AlgoEvent::VertexDiscovered, neighbor, user_context);
 				
 				//release edge - update neighbor vertex weight and parent
-				if (neighbor_context->WeightInForwardSearch > current_vertex_context->WeightInForwardSearch + fe->Weight) {
-					neighbor_context->WeightInForwardSearch = current_vertex_context->WeightInForwardSearch + fe->Weight;
+				if (neighbor_context->WeightInForwardSearch > forward_search_current_context->WeightInForwardSearch + fe->Weight) {
+					neighbor_context->WeightInForwardSearch = forward_search_current_context->WeightInForwardSearch + fe->Weight;
 					neighbor_context->ParentInForwardSearch = current_forward_search_vertex;
 
 					forward_queue.increase(static_cast<ForwardSearchVertexHandle>(neighbor_context->HandleInForwardSearch), neighbor);
@@ -314,7 +324,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 
 				//if neighbor vertex is already processed by backward search check weather we have new shortest path!
 				if (neighbor_context->ProcessedByBackwardSearch) {
-					new_path_weight = neighbor_context->WeightInBackwardSearch + fe->Weight + current_vertex_context->WeightInForwardSearch;
+					new_path_weight = neighbor_context->WeightInBackwardSearch + fe->Weight + forward_search_current_context->WeightInForwardSearch;
 					if (new_path_weight < shortest_path_weight) {
 						shortest_path_weight = new_path_weight;
 						forward_shortest_path_vertex = current_forward_search_vertex;
@@ -323,11 +333,18 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 					}
 				}
 			}
-			current_vertex_context->ProcessedByForwardSearch = true;
+			forward_search_current_context->ProcessedByForwardSearch = true;
 			if (callback) callback(AlgoEvent::VertexProcessingFinished, current_forward_search_vertex, user_context);
 
 			forward_queue.pop();
 		};
+
+		//Dead end found
+		if (backward_search_current_context->WeightInBackwardSearch == INFINITE_WEIGHT) {
+			if (callback) callback(AlgoEvent::AlgorithmFinished, nullptr, user_context);
+			result.ResultCode = AlgoResultCode::NotFound;
+			return;
+		}
 
 		if (shortest_path_weight < INFINITE_WEIGHT && shortest_path_weight < best_forward_search + best_backward_search)
 		{
@@ -341,7 +358,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 
 		//process current vertex in forward search
 		if (!backward_queue.empty()) {
-			current_vertex_context = static_cast<BidirectionalDijkstraContext*>(current_backward_search_vertex->Context);
+			backward_search_current_context = static_cast<BidirectionalDijkstraContext*>(current_backward_search_vertex->Context);
 			if (callback) callback(AlgoEvent::VertexProcessingStarted, current_backward_search_vertex, user_context);
 		
 			//process all incoming edges to current backward search vertex
@@ -353,8 +370,8 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 				if (callback) callback(AlgoEvent::VertexDiscovered, neighbor, user_context);
 				
 				//release edge - update neighbor vertex weight and parent
-				if (neighbor_context->WeightInBackwardSearch > current_vertex_context->WeightInBackwardSearch + be->Weight) {
-					neighbor_context->WeightInBackwardSearch = current_vertex_context->WeightInBackwardSearch + be->Weight;
+				if (neighbor_context->WeightInBackwardSearch > backward_search_current_context->WeightInBackwardSearch + be->Weight) {
+					neighbor_context->WeightInBackwardSearch = backward_search_current_context->WeightInBackwardSearch + be->Weight;
 					neighbor_context->ParentInBackwardSearch = current_backward_search_vertex;
 
 					backward_queue.increase(static_cast<BackwardSearchVertexHandle>(neighbor_context->HandleInBackwardSearch), neighbor);
@@ -362,7 +379,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 
 				//if neighbor vertex is already processed by forward search check weather we have new shortest path!
 				if (neighbor_context->ProcessedByForwardSearch) {
-					new_path_weight = neighbor_context->WeightInForwardSearch + be->Weight + current_vertex_context->WeightInBackwardSearch;
+					new_path_weight = neighbor_context->WeightInForwardSearch + be->Weight + backward_search_current_context->WeightInBackwardSearch;
 					if (new_path_weight < shortest_path_weight) {
 						shortest_path_weight = new_path_weight;
 						forward_shortest_path_vertex = neighbor;
@@ -371,7 +388,7 @@ void bidirectionalDijkstra(Vertex* source, Vertex* target, Graph& graph, Callbac
 					}
 				}
 			}
-			current_vertex_context->ProcessedByBackwardSearch = true;
+			backward_search_current_context->ProcessedByBackwardSearch = true;
 			if (callback) callback(AlgoEvent::VertexProcessingFinished, current_backward_search_vertex, user_context);
 
 			backward_queue.pop();
