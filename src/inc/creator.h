@@ -12,7 +12,7 @@
 #include "settings.h"
 
 //Create graph with parameters defined by settings
-void createGraph(Graph& graph, const Settings& settings);
+int createGraph(Graph& graph, const Settings& settings);
 
 //Select random vertex from the graph to which edge could be created
 Vertex* chooseToVertex(Vertex *vertex_from, const Settings &settings, Graph &graph,
