@@ -221,3 +221,44 @@ void saveGraph(Graph& graph, const Settings& settings) {
 }
 
 
+void save2dGraph(Graph& graph, const Settings& settings) {
+	int x_max = -1, y_max = -1;
+	int vertex_x, vertex_y;
+	vector<vector<bool>*> rect;
+	for (auto &pair: graph) {
+		vertex_x = static_cast<Vertex2d*>(pair.second)->X;
+		vertex_y = static_cast<Vertex2d*>(pair.second)->Y;
+
+		if (vertex_y > y_max) {
+			for (int y = y_max + 1; y <= vertex_y; y++) {
+				vector<bool>* row = new vector<bool>();
+				rect.push_back(row);
+				for (int x = 0; x <= x_max; x++) {
+					row->push_back(false);
+				}
+			}
+			y_max = vertex_y;
+		}
+
+		if (vertex_x > x_max) {
+			for (auto& row2 : rect) {
+				for (int x2 = x_max + 1; x2 <= vertex_x; x2++) {
+					row2->push_back(false);
+				}
+			}
+			x_max = vertex_x;
+		}
+		(*rect[vertex_y])[vertex_x] = true;
+	}
+
+	ostringstream stm;
+	for (auto &line : rect) {
+		for (bool occupied : *line) {
+			stm << (occupied ? "-" : "+");
+		}
+		stm << "\n";
+	}
+	FILE *fd = fopen(settings.FilePath.c_str(), "w");
+	fputs(stm.str().c_str(), fd);
+	fclose(fd);
+}

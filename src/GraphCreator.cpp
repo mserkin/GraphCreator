@@ -24,7 +24,7 @@
 
 using namespace std;
 
-const string VERSION = "1.14.0.21";
+const string VERSION = "1.15.0.22";
 
 struct UserContex {
 	Settings* SettingsPtr = nullptr;
@@ -315,7 +315,16 @@ int main(int argc, char **argv) {
 	applyAlgo(graph, settings);
 
 	if (settings.SaveToFile) {
-		saveGraph(graph, settings);
+		if (settings.FilePath.rfind(".2d") != string::npos) {
+			save2dGraph(graph, settings);
+		}
+		else if (settings.FilePath.rfind(".json") != string::npos) {
+			saveGraph(graph, settings);
+		}
+		else {
+			cout << "Error: Unknown file type!\n";
+			exit(FATAL_ERROR_UNKNOWN_FILE_TYPE);
+		}
 	}
 	cout << endl;
 	return 0;

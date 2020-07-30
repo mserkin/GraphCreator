@@ -17,9 +17,11 @@ int loadGraph(Graph& graph, const Settings& settings);
 //Load graph from the file of 2d format
 int load2dGraph(Graph& graph, const Settings& settings);
 
-//Save graph from the file of json format
+//Save graph to the file of json format
 void saveGraph(Graph& graph, const Settings& settings);
 
 
+//Save graph to the file of 2d format
+void save2dGraph(Graph& graph, const Settings& settings);
 
 #endif /* INC_LOADSAVE_H_ */
